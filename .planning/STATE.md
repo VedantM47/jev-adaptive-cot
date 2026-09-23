@@ -12,9 +12,12 @@
 |---|---|
 | Active Milestone | M1 — Research System v1 |
 | Active Phase | Phase 2 — Research Spec as Machine-Readable Artifacts |
+| Active Phase | Phase 3 — Equity Research Benchmark: Schema & Loader |
 | Phase Status | Complete |
 | Phases Complete | 2 / 19 |
 | Last Commit | feat: Phase 2 — Research spec as machine-readable artifacts |
+| Phases Complete | 3 / 19 |
+| Last Commit | feat: Phase 3 — Equity research benchmark schema & loader |
 
 ---
 
@@ -53,6 +56,7 @@
 | Phase 1 | 2026-09-23 | 2026-09-23 | Completed repo scaffold and config loader |
 | Phase 2 | 2026-09-23 | 2026-09-23 | Implemented Action enum, config presets, metrics registry stubs |
 | Phase 3 | — | — | |
+| Phase 3 | 2026-09-23 | 2026-09-23 | Implemented BenchmarkExample schema, dataset validator, splitter, and sample dataset |
 | … | — | — | |
 
 ---

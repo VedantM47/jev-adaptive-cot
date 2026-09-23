@@ -62,6 +62,7 @@
 
 ### Phase 3 — Equity Research Benchmark: Schema & Loader
 **Status:** `[ ] pending`  
+**Status:** `[x] done`  
 **Source:** PRD Chunk 2  
 **Dependencies:** Phase 1
 
