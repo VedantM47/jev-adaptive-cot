@@ -1,0 +1,10 @@
+# configs/conditions/selfgate.yaml
+# Self-gate: LLM chooses next action at each step.
+llm: "gemini-1.5-pro-latest"
+condition: "selfgate"
+
+# Required version fields
+prompt_version: "v0.1"
+retrieval_version: "faiss-v0.1"
+dataset_version: "phase1-seed-v0.1"
+jev_version: "none"

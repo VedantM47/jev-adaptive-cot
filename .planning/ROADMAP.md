@@ -13,7 +13,7 @@
 ---
 
 ### Phase 1 — Repo Scaffolding & Config System
-**Status:** `[ ] pending`  
+**Status:** `[x] done`  
 **Source:** PRD Chunk 0  
 **Dependencies:** none
 

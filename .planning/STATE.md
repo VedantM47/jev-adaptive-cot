@@ -12,9 +12,9 @@
 |---|---|
 | Active Milestone | M1 — Research System v1 |
 | Active Phase | Phase 1 — Repo Scaffolding & Config System |
-| Phase Status | Pending |
-| Phases Complete | 0 / 19 |
-| Last Commit | — (initial project setup) |
+| Phase Status | Complete |
+| Phases Complete | 1 / 19 |
+| Last Commit | feat: Phase 1 — repo scaffold, config loader, logging, CI stub |
 
 ---
 
@@ -50,7 +50,7 @@
 
 | Phase | Started | Completed | Notes |
 |---|---|---|---|
-| Phase 1 | — | — | |
+| Phase 1 | 2026-09-23 | 2026-09-23 | Completed repo scaffold and config loader |
 | Phase 2 | — | — | |
 | Phase 3 | — | — | |
 | … | — | — | |
