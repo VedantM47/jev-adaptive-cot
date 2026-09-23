@@ -1,3 +1,19 @@
+---
+gsd_state_version: "1.0"
+milestone: v1
+current_phase: Phase 1 (Repo Scaffolding) — not yet started
+status: unknown
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-09-23T17:36:03.420Z"
+state_head: ac5b78192df306021b6e2ddd76421e418e29681a
+progress:
+  total_phases: 19
+  completed_phases: 0
+  total_plans: 8
+  completed_plans: 1
+  percent: 0
+---
+
 # STATE.md — Project Memory
 
 **Project:** JEV-Gated Adaptive CoT for Equity Research  
@@ -64,10 +80,12 @@
 ## Workstreams (Parallel)
 
 After Phase 8 (trajectory collection), the following can run in parallel:
+
 - **Stream A:** Phases 9→10→11→12 (JEV training pipeline)
 - **Stream B:** Phases 13, 14 (evaluation suite — efficiency/grounding)
 
 After Phase 15 (factorial experiment):
+
 - **Stream C:** Phases 16, 17, 18 (ablations, oracle, error taxonomy) — all parallel
 - **Stream D:** Phase 19 (stats + reporting) — depends on C
 
@@ -88,3 +106,18 @@ After Phase 15 (factorial experiment):
 | `controller/state.py` | JEV state schema — Appendix A (Phase 6) |
 | `models/jev/checkpoints/jev_frozen_v1/` | Frozen calibrated JEV artifact (Phase 11) |
 
+## Performance Metrics
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 04 P01 | 25min | 3 tasks | 5 files |
+
+## Decisions
+
+- [Phase Phase 1 (Repo Scaffolding) — not yet started]: Phase 4 Plan 1: RetrievalConfig nested in ExperimentConfig; faiss-cpu/sentence-transformers/torch(CPU)/numpy installed after human-approved package-legitimacy checkpoint
+
+## Session
+
+**Last session:** 2026-09-23T17:36:03.382Z
+**Stopped at:** Completed 04-01-PLAN.md
+**Resume file:** None
