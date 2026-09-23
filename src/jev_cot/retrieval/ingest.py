@@ -4,8 +4,8 @@ jev_cot.retrieval.ingest
 Ingest pipeline: read, chunk, tag, embed, and index a local document
 corpus into the on-disk FAISS artifacts :class:`FaissRetriever` loads.
 
-The CLI entry point (``main()``) is added by plan 04-05, not here — this
-module exposes only the pipeline functions ``build_index`` composes.
+Also provides the ``main()`` CLI entry point that drives the pipeline from
+a YAML ``ExperimentConfig`` (see :mod:`jev_cot.config`).
 
 Usage::
 
@@ -21,18 +21,26 @@ Usage::
         chunk_overlap_words=20,
         retrieval_version="faiss-v0.1",
     )
+
+Or, as a CLI::
+
+    python -m jev_cot.retrieval.ingest --config configs/base.yaml
 """
 
 from __future__ import annotations
 
+import argparse
 import re
+import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Final
 
 import jsonlines
 
-from jev_cot.logging import logger
+from jev_cot.config import load_config
+from jev_cot.logging import logger, setup_logging
 from jev_cot.retrieval.base import Chunk, parse_document_id
 from jev_cot.retrieval.faiss_retriever import (
     CHUNKS_FILENAME,
@@ -265,3 +273,94 @@ def build_index(
         latency_ms=round(latency_ms, 3),
     )
     return manifest
+
+
+# ── CLI ────────────────────────────────────────────────────────────────────────
+def main(argv: Sequence[str] | None = None) -> None:
+    """
+    CLI entry point: build a FAISS index from a YAML-configured document corpus.
+
+    Loads an :class:`~jev_cot.config.ExperimentConfig`, resolves
+    documents_dir/index_dir (``--documents-dir``/``--index-dir`` override the
+    config's ``retrieval:`` block), verifies the corpus exists and is
+    non-empty *before* loading the embedding model, then builds the index.
+
+    Args:
+        argv: Command-line arguments (excluding the program name). Passed
+            straight to ``argparse``; when ``None``, argparse reads
+            ``sys.argv[1:]``. Exposed as a parameter so tests can invoke the
+            CLI in-process instead of spawning a subprocess.
+
+    Raises:
+        SystemExit: With code 1 if the config, documents directory, or
+            corpus is invalid. Prints ``Error: {message}`` to stderr first.
+
+    Usage::
+
+        python -m jev_cot.retrieval.ingest --config configs/base.yaml
+    """
+    parser = argparse.ArgumentParser(
+        description="Build a FAISS retrieval index from a local document corpus."
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="configs/base.yaml",
+        help="Path to the YAML experiment config (see jev_cot.config.ExperimentConfig).",
+    )
+    parser.add_argument(
+        "--documents-dir",
+        type=str,
+        default=None,
+        help="Directory of {DOCUMENT_ID}.txt seed documents. Overrides the config's "
+        "retrieval.documents_dir when given.",
+    )
+    parser.add_argument(
+        "--index-dir",
+        type=str,
+        default=None,
+        help="Directory to write the FAISS index artifacts into. Overrides the config's "
+        "retrieval.index_dir when given.",
+    )
+    parser.add_argument(
+        "--log-dir",
+        type=str,
+        default="logs",
+        help="Directory for this ingest run's log file.",
+    )
+    args = parser.parse_args(argv)
+
+    try:
+        cfg = load_config(args.config)
+        documents_dir = args.documents_dir or cfg.retrieval.documents_dir
+        index_dir = args.index_dir or cfg.retrieval.index_dir
+
+        # Cheap precheck before loading the embedding model (research Pitfall 1:
+        # never pay for a model load just to fail on a missing/empty corpus).
+        discover_documents(documents_dir)
+
+        setup_logging(log_dir=args.log_dir, run_id="ingest")
+
+        embedder = SentenceTransformerEmbedder(cfg.retrieval.embedding_model)
+        manifest = build_index(
+            documents_dir,
+            index_dir,
+            embedder,
+            chunk_max_words=cfg.retrieval.chunk_max_words,
+            chunk_overlap_words=cfg.retrieval.chunk_overlap_words,
+            retrieval_version=cfg.retrieval_version,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        # pydantic.ValidationError is a ValueError subclass, so config
+        # validation failures are caught here too.
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    print(
+        f"Indexed {manifest.num_chunks} chunks from {manifest.num_documents} "
+        f"documents into {index_dir}"
+    )
+
+
+if __name__ == "__main__":
+    main()
