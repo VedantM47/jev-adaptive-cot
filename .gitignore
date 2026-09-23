@@ -58,3 +58,6 @@ coverage.xml
 paper/figures/*.png
 paper/figures/*.pdf
 analysis/outputs/
+
+# ── Generated retrieval index (rebuild: python -m jev_cot.retrieval.ingest) ───
+data/processed/faiss_index/

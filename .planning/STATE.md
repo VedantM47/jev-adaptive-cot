@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1
 current_phase: Phase 1 (Repo Scaffolding) — not yet started
 status: unknown
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-09-23T18:13:40.088Z"
-state_head: 667fcd048b49bcd056780084cddcd0c09db3c874
+stopped_at: Completed 04-05-PLAN.md
+last_updated: "2026-09-23T18:14:32.598Z"
+state_head: f8095a461bdfe7affd58534e828e2d69141f5673
 progress:
   total_phases: 19
   completed_phases: 0
   total_plans: 8
-  completed_plans: 4
-  percent: 0
+  completed_plans: 5
+  percent: 50
 ---
 
 # STATE.md — Project Memory
@@ -114,6 +114,7 @@ After Phase 15 (factorial experiment):
 | Phase 04 P02 | 55min | 1 tasks | 7 files |
 | Phase 04 P03 | 55min | 2 tasks | 1 files |
 | Phase 04 P04 | 20min | 2 tasks | 10 files |
+| Phase 04 P05 | 75min | 3 tasks | 5 files |
 
 ## Decisions
 
@@ -122,9 +123,10 @@ After Phase 15 (factorial experiment):
 - [Phase Phase 1 (Repo Scaffolding) — not yet started]: Phase 4 Plan 3: swap test (_InMemoryKeywordBackend) proves base.py is a real swappable interface; abstract-enforcement, latency-to-JSONL, and 4 RetrievalContractError violation tests added; no base.py changes needed
 - [Phase Phase 1 (Repo Scaffolding) — not yet started]: Phase 4 Plan 3: document-ID parsing/tier-mapping/input-validation tests cover all 9 benchmark ids + 10Q, sample_examples.jsonl round-trip, 8 malformed ids, and 7 invalid RetrievalQuery shapes
 - [Phase Phase 1 (Repo Scaffolding) — not yet started]: CAT_10K_FY23 reworded to remove lexical overlap between decoy paragraphs and the machine-sales evidence paragraph, so EQ_004 evidence recalls within top_k=3
+- [Phase Phase 1 (Repo Scaffolding) — not yet started]: Phase 4 Plan 5: config-driven ingest CLI (main()), discover_documents() hardened against symlinks/path escapes (T-04-02), .gitignore rule for generated FAISS index, and 20 new tests covering CLI errors, discovery/chunking edge cases, index-load robustness, and rebuild determinism
 
 ## Session
 
-**Last session:** 2026-09-23T18:13:40.047Z
-**Stopped at:** Completed 04-04-PLAN.md
+**Last session:** 2026-09-23T18:14:32.551Z
+**Stopped at:** Completed 04-05-PLAN.md
 **Resume file:** None
