@@ -12,6 +12,9 @@ Acceptance criteria covered:
   AC-8  Condition enum: only valid literals accepted.
   AC-9  jev_version defaults to "none" when omitted.
   AC-10 Timestamp is auto-populated when not specified in YAML.
+  AC-11 retrieval block loads typed.
+  AC-12 retrieval defaults when omitted.
+  AC-13 invalid retrieval values raise.
 """
 
 from __future__ import annotations
@@ -21,8 +24,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from jev_cot.config import ExperimentConfig, ToolLimitsConfig, load_config
-
+from jev_cot.config import ExperimentConfig, RetrievalConfig, ToolLimitsConfig, load_config
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -141,3 +143,52 @@ class TestLoadConfig:
         from datetime import datetime
 
         datetime.fromisoformat(cfg.timestamp)  # raises if malformed
+
+
+class TestRetrievalConfig:
+    # AC-11 retrieval block ───────────────────────────────────────────────────
+    def test_base_yaml_retrieval_block(self, base_yaml: Path) -> None:
+        """configs/base.yaml's retrieval block loads with the documented defaults."""
+        cfg = load_config(base_yaml)
+        assert cfg.retrieval.embedding_model == "sentence-transformers/all-MiniLM-L6-v2"
+        assert cfg.retrieval.chunk_max_words == 120
+        assert cfg.retrieval.chunk_overlap_words == 20
+        assert cfg.retrieval.top_k == 5
+        assert cfg.retrieval.documents_dir == "data/raw/documents"
+        assert cfg.retrieval.index_dir == "data/processed/faiss_index"
+
+    # AC-12 retrieval defaults when omitted ──────────────────────────────────
+    def test_retrieval_defaults_when_omitted(self, tmp_path: Path) -> None:
+        """A YAML that omits the retrieval block still loads with RetrievalConfig defaults."""
+        p = _minimal_yaml(tmp_path)
+        cfg = load_config(p)
+        assert cfg.retrieval == RetrievalConfig()
+
+    # AC-13 invalid retrieval values raise ───────────────────────────────────
+    def test_overlap_not_smaller_than_window_raises(self, tmp_path: Path) -> None:
+        """chunk_overlap_words >= chunk_max_words raises ValidationError."""
+        extra = "retrieval:\n  chunk_max_words: 50\n  chunk_overlap_words: 50\n"
+        p = _minimal_yaml(tmp_path, extra=extra)
+        with pytest.raises(ValidationError):
+            load_config(p)
+
+    @pytest.mark.parametrize("top_k", [0, 101])
+    def test_top_k_out_of_range_raises(self, tmp_path: Path, top_k: int) -> None:
+        """top_k outside 1..100 raises ValidationError."""
+        extra = f"retrieval:\n  top_k: {top_k}\n"
+        p = _minimal_yaml(tmp_path, extra=extra)
+        with pytest.raises(ValidationError):
+            load_config(p)
+
+    def test_empty_embedding_model_raises(self, tmp_path: Path) -> None:
+        """An empty embedding_model raises ValidationError."""
+        extra = 'retrieval:\n  embedding_model: ""\n'
+        p = _minimal_yaml(tmp_path, extra=extra)
+        with pytest.raises(ValidationError):
+            load_config(p)
+
+    def test_retrieval_config_is_frozen(self, base_yaml: Path) -> None:
+        """RetrievalConfig is frozen — mutation raises an exception."""
+        cfg = load_config(base_yaml)
+        with pytest.raises(Exception):
+            cfg.retrieval.top_k = 99  # type: ignore[misc]

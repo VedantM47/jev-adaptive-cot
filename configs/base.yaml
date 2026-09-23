@@ -32,6 +32,15 @@ tool_limits:
   max_branches: 3
   max_compute_calls: 5
 
+# ── Retrieval (Phase 4 — FR-11) ────────────────────────────────────────────────
+retrieval:
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"  # HF model id, used for ingest + query
+  chunk_max_words: 120       # max words per chunk (fits MiniLM's 256 word-piece window)
+  chunk_overlap_words: 20    # words shared between consecutive chunk windows
+  top_k: 5                   # default number of chunks returned per RETRIEVE call
+  documents_dir: "data/raw/documents"        # seed corpus of {DOCUMENT_ID}.txt files
+  index_dir: "data/processed/faiss_index"    # generated FAISS artifacts (git-ignored)
+
 # ── Reproducibility ───────────────────────────────────────────────────────────
 random_seed: 42
 # timestamp is auto-set at load time (UTC ISO-8601); override here to pin it.
