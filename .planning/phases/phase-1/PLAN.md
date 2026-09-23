@@ -207,33 +207,34 @@ class ToolLimitsConfig(BaseModel):
 
 class ExperimentConfig(BaseModel):
     """Captures all fields required by PRD §6.6 for a single experiment run."""
+
     model_config = {"frozen": True}
 
     # Identity
     run_id: str | None = None  # auto-generated if not provided
-    
+
     # LLM
-    llm: str                             # e.g. "gemini-1.5-pro-latest"
+    llm: str  # e.g. "gemini-1.5-pro-latest"
     temperature: float = Field(ge=0.0, le=2.0, default=0.0)
     max_tokens: int = Field(ge=1, default=4096)
-    
+
     # Versioning (all required for auditability)
-    jev_version: str = "none"            # "none" for Conditions A/B
+    jev_version: str = "none"  # "none" for Conditions A/B
     prompt_version: str
     retrieval_version: str
     dataset_version: str
-    
+
     # Control limits
     max_steps: int = Field(ge=1, default=15)
     tool_limits: ToolLimitsConfig = Field(default_factory=ToolLimitsConfig)
-    
+
     # Reproducibility
     random_seed: int = 42
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
-    
+
     # Condition
     condition: Literal["vanilla", "selfgate", "jevgate"] = "vanilla"
-    
+
     # Safety — escalate fallback toggle
     enable_escalate_fallback: bool = False
     escalate_confidence_threshold: float = Field(ge=0.0, le=1.0, default=0.5)
@@ -328,7 +329,7 @@ def setup_logging(
         log_dir / f"{run_id}.log.jsonl",
         level=level,
         format="{message}",
-        serialize=True,          # loguru serialize=True → JSON per line
+        serialize=True,  # loguru serialize=True → JSON per line
         rotation="100 MB",
         retention="30 days",
         compression="gz",

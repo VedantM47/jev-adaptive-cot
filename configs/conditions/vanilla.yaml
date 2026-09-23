@@ -1,6 +1,6 @@
 # configs/conditions/vanilla.yaml
 # Vanilla baseline: Single LLM pass with no adaptive control.
-llm: "gemini-1.5-pro-latest"
+llm: "gemini-flash-lite-latest"
 condition: "vanilla"
 
 # The following required version fields should be overridden by the main test runner or run wrapper

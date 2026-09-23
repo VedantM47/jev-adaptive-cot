@@ -3,10 +3,12 @@ Tests for jev_cot.data schema validation.
 """
 
 from pathlib import Path
-from pydantic import ValidationError
-import pytest
-from jev_cot.data.schema import BenchmarkExample, QuestionType
+
 import jsonlines
+import pytest
+from pydantic import ValidationError
+
+from jev_cot.data.schema import BenchmarkExample, QuestionType
 
 
 def test_schema_valid_example():

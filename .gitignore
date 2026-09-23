@@ -18,7 +18,9 @@ wheels/
 .venv
 # ── uv / venv ─────────────────────────────────────────────────────────────────
 .venv/
-.python-version
+
+# ── GSD agent worktree scratch space ─────────────────────────────────────────
+.claude/worktrees/
 
 # ── Logs (keep directory structure, ignore content) ────────────────────────────
 logs/*.jsonl
@@ -51,6 +53,7 @@ coverage.xml
 # ── Secrets / keys ────────────────────────────────────────────────────────────
 .env
 .env.*
+!.env.example
 *.key
 *.pem
 
@@ -58,3 +61,6 @@ coverage.xml
 paper/figures/*.png
 paper/figures/*.pdf
 analysis/outputs/
+
+# ── Generated retrieval index (rebuild: python -m jev_cot.retrieval.ingest) ───
+data/processed/faiss_index/

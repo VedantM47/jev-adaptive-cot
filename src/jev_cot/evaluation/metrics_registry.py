@@ -7,8 +7,6 @@ This module defines the metric names, types, and mathematical formulas
 as stubs. Implementations will be added in Phase 13/14.
 """
 
-from typing import Dict, Any
-
 
 class MetricDefinition:
     def __init__(self, name: str, description: str, formula: str):
@@ -17,7 +15,7 @@ class MetricDefinition:
         self.formula = formula
 
 
-METRICS: Dict[str, MetricDefinition] = {
+METRICS: dict[str, MetricDefinition] = {
     # H1 - Efficiency
     "ops_saved": MetricDefinition(
         name="ops_saved",
@@ -51,7 +49,11 @@ METRICS: Dict[str, MetricDefinition] = {
     "answer_quality": MetricDefinition(
         name="answer_quality",
         description="Multi-dimensional answer quality score (0-1)",
-        formula="weighted_sum(factual_accuracy, evidence_support, citation_correctness, completeness, calculation_correctness, contradiction_handling, uncertainty_calibration)",
+        formula=(
+            "weighted_sum(factual_accuracy, evidence_support, citation_correctness, "
+            "completeness, calculation_correctness, contradiction_handling, "
+            "uncertainty_calibration)"
+        ),
     ),
     # H6 - Calibration
     "ece": MetricDefinition(
