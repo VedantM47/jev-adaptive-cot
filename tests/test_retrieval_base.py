@@ -14,6 +14,13 @@ Acceptance criteria covered:
   AC-C1  A backend that violates the retrieve() contract (wrong company,
          wrong document_type, unsorted scores, more than top_k chunks)
          raises RetrievalContractError.
+  AC-T1  Every document id used by the benchmark (data/raw/sample_examples.jsonl)
+         parses to its example's company and period, with the correct
+         primary/secondary tier, and SOURCE_TIER_BY_DOCUMENT_TYPE covers
+         every DocumentType and is immutable.
+  AC-V1  A malformed document id, an inconsistent Chunk tier, an
+         out-of-range score, or an invalid RetrievalQuery is rejected
+         before any _search call or latency log record.
 """
 
 from __future__ import annotations
@@ -25,6 +32,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from pydantic import ValidationError
 
 from jev_cot.config import RetrievalConfig
 from jev_cot.logging import logger, setup_logging
@@ -38,12 +46,15 @@ from jev_cot.retrieval.base import (
     RetrievalResult,
     RetrievedChunk,
     SourceTier,
+    parse_document_id,
 )
 from jev_cot.retrieval.faiss_retriever import FaissRetriever
 from jev_cot.retrieval.ingest import build_index, load_chunks
 
 if TYPE_CHECKING:
     from jev_cot.retrieval.faiss_retriever import SentenceTransformerEmbedder
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 # ── Synthetic corpus ─────────────────────────────────────────────────────────
@@ -392,3 +403,158 @@ class TestContractViolations:
             _TooManyChunksBackend().retrieve(
                 company="ACME", period="FY2023", query="revenue", top_k=1
             )
+
+
+# ── AC-T1 tagging / AC-V1 validation ─────────────────────────────────────────
+class TestDocumentIdTagging:
+    @pytest.mark.parametrize(
+        ("document_id", "company", "period", "document_type", "source_tier"),
+        [
+            ("MSFT_10K_FY23", "MSFT", "FY2023", DocumentType.TEN_K, SourceTier.PRIMARY),
+            ("CRM_10K_FY23", "CRM", "FY2023", DocumentType.TEN_K, SourceTier.PRIMARY),
+            ("ADBE_10K_FY23", "ADBE", "FY2023", DocumentType.TEN_K, SourceTier.PRIMARY),
+            ("CAT_10K_FY23", "CAT", "FY2023", DocumentType.TEN_K, SourceTier.PRIMARY),
+            ("MMM_10K_FY23", "MMM", "FY2023", DocumentType.TEN_K, SourceTier.PRIMARY),
+            ("HON_10K_FY23", "HON", "FY2023", DocumentType.TEN_K, SourceTier.PRIMARY),
+            (
+                "ADBE_Q4_Earnings_FY23",
+                "ADBE",
+                "FY2023",
+                DocumentType.EARNINGS_RELEASE,
+                SourceTier.SECONDARY,
+            ),
+            (
+                "CAT_Q4_Earnings_FY23",
+                "CAT",
+                "FY2023",
+                DocumentType.EARNINGS_RELEASE,
+                SourceTier.SECONDARY,
+            ),
+            (
+                "MSFT_Q1_Earnings_FY22",
+                "MSFT",
+                "FY2022",
+                DocumentType.EARNINGS_RELEASE,
+                SourceTier.SECONDARY,
+            ),
+            ("XYZ_10Q_FY2024", "XYZ", "FY2024", DocumentType.TEN_Q, SourceTier.PRIMARY),
+        ],
+    )
+    def test_parse_document_id(
+        self,
+        document_id: str,
+        company: str,
+        period: str,
+        document_type: DocumentType,
+        source_tier: SourceTier,
+    ) -> None:
+        """Each benchmark document id parses to its company, period, type, and tier."""
+        metadata = parse_document_id(document_id)
+        assert metadata.company == company
+        assert metadata.period == period
+        assert metadata.document_type == document_type
+        assert metadata.source_tier == source_tier
+
+    def test_every_sample_document_id_matches_its_example(self) -> None:
+        """Every document id in sample_examples.jsonl parses to its example's company/period."""
+        sample_path = REPO_ROOT / "data" / "raw" / "sample_examples.jsonl"
+        raw_lines = [
+            line for line in sample_path.read_text(encoding="utf-8").splitlines() if line.strip()
+        ]
+        assert raw_lines, f"No example lines found in {sample_path}"
+        for raw_line in raw_lines:
+            example = json.loads(raw_line)
+            for document_id in example["documents"]:
+                metadata = parse_document_id(document_id)
+                assert metadata.company == example["company"]
+                assert metadata.period == example["period"]
+
+    @pytest.mark.parametrize(
+        "document_id",
+        [
+            "MSFT_8K_FY23",
+            "MSFT_10K",
+            "msft_10K_FY23",
+            "MSFT_10K_2023",
+            "MSFT_Q5_Earnings_FY23",
+            "../MSFT_10K_FY23",
+            "MSFT_10K_FY23.txt",
+            "",
+        ],
+    )
+    def test_invalid_document_ids_raise(self, document_id: str) -> None:
+        """A malformed document id raises ValueError, never silently parses."""
+        with pytest.raises(ValueError):
+            parse_document_id(document_id)
+
+    def test_tier_mapping_covers_every_document_type(self) -> None:
+        """SOURCE_TIER_BY_DOCUMENT_TYPE covers every DocumentType and is read-only."""
+        assert set(SOURCE_TIER_BY_DOCUMENT_TYPE) == set(DocumentType)
+        with pytest.raises(TypeError):
+            SOURCE_TIER_BY_DOCUMENT_TYPE[DocumentType.TEN_K] = SourceTier.SECONDARY  # type: ignore[index]
+
+
+class TestInputValidation:
+    def test_chunk_rejects_inconsistent_tier(self) -> None:
+        """A Chunk whose source_tier disagrees with its document_type cannot be constructed."""
+        with pytest.raises(ValidationError):
+            Chunk(
+                chunk_id="ACME_10K_FY23::000",
+                document_id="ACME_10K_FY23",
+                company="ACME",
+                period="FY2023",
+                document_type=DocumentType.TEN_K,
+                source_tier=SourceTier.SECONDARY,
+                text="mismatched tier",
+            )
+
+    def test_retrieved_chunk_is_frozen(self) -> None:
+        """RetrievedChunk instances are immutable (frozen pydantic model)."""
+        chunk = _make_chunk()
+        with pytest.raises(Exception):
+            chunk.score = 0.1  # type: ignore[misc]
+
+    def test_score_out_of_range_rejected(self) -> None:
+        """A RetrievedChunk score above 1.0 raises ValidationError."""
+        with pytest.raises(ValidationError):
+            _make_chunk(score=1.5)
+
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"company": ""},
+            {"company": "   "},
+            {"period": ""},
+            {"query": ""},
+            {"top_k": 0},
+            {"top_k": 101},
+            {"document_type": "8K"},
+        ],
+    )
+    def test_invalid_query_rejected_before_search(
+        self, overrides: dict[str, Any], retrieval_log_records: list[dict[str, Any]]
+    ) -> None:
+        """An invalid request raises ValidationError before any _search call or log record."""
+
+        class _SpyBackend(RetrievalBackend):
+            def __init__(self) -> None:
+                self.search_calls = 0
+
+            def _search(self, request: RetrievalQuery) -> list[RetrievedChunk]:
+                self.search_calls += 1
+                return []
+
+        spy = _SpyBackend()
+        kwargs: dict[str, Any] = {
+            "company": "ACME",
+            "period": "FY2023",
+            "query": "revenue",
+            "top_k": 5,
+        }
+        kwargs.update(overrides)
+
+        with pytest.raises(ValidationError):
+            spy.retrieve(**kwargs)
+
+        assert spy.search_calls == 0
+        assert retrieval_log_records == []
