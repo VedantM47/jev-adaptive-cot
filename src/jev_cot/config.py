@@ -144,7 +144,11 @@ class ExperimentConfig(BaseModel):
     )
 
     # ── Condition ─────────────────────────────────────────────────────────────
-    condition: Literal["vanilla", "selfgate", "jevgate"] = Field(
+    # "typesafe_jev" is a 4th, optional comparison arm: TypeSafe AI's real
+    # commercial "Jev" decision model (docs.typesafe.ai), used here as an
+    # external benchmark against our own from-scratch JEV classifier. Only
+    # runs if TYPESAFE_API_KEY is set.
+    condition: Literal["vanilla", "selfgate", "jevgate", "typesafe_jev"] = Field(
         default="vanilla",
         description="Experimental condition. Controls which gate is used.",
     )

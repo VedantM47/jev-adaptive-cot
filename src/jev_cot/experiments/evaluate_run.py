@@ -20,6 +20,7 @@ from pathlib import Path
 import jsonlines
 
 from jev_cot.data.trajectory import Trajectory, load_trajectories
+from jev_cot.errors import JevCotError
 from jev_cot.evaluation.efficiency import summarize
 from jev_cot.evaluation.grounding.metrics import grounding_precision, grounding_recall
 from jev_cot.evaluation.latency import latency_breakdown
@@ -91,7 +92,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     try:
         summary = evaluate(args.trajectories, args.dataset, args.judge_model, args.scored_out)
-    except (FileNotFoundError, ValueError, RuntimeError) as exc:
+    except (FileNotFoundError, ValueError, JevCotError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 

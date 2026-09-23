@@ -18,6 +18,7 @@ from collections.abc import Sequence
 from jev_cot.config import load_config
 from jev_cot.controller.loop import run_trajectory
 from jev_cot.data.trajectory import append_trajectory
+from jev_cot.errors import JevCotError
 from jev_cot.experiments.common import get_retriever, load_dataset, new_run_id
 from jev_cot.logging import logger, setup_logging
 from jev_cot.models.llm.client import LLMClient
@@ -59,7 +60,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     try:
         run_selfgate(args.config, args.dataset, args.log_dir)
-    except (FileNotFoundError, ValueError, RuntimeError) as exc:
+    except (FileNotFoundError, ValueError, JevCotError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 

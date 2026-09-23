@@ -12,10 +12,9 @@ from __future__ import annotations
 
 from jev_cot.config import ExperimentConfig
 from jev_cot.controller.state import ControllerState
+from jev_cot.errors import LimitExceededError
 
-
-class LimitExceededError(RuntimeError):
-    """Raised when a hard safety limit is hit — the controller must STOP."""
+__all__ = ["LimitExceededError", "check_limits"]
 
 
 def check_limits(

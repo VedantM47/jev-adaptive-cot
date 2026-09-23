@@ -16,6 +16,7 @@ import re
 
 from pydantic import BaseModel, Field
 
+from jev_cot.errors import GateResponseParseError
 from jev_cot.models.llm.client import LLMClient
 
 _DIMENSIONS = (
@@ -63,17 +64,36 @@ class QualityScore(BaseModel):
 def score_answer(
     client: LLMClient, question: str, gold_claims: list[str], answer: str
 ) -> QualityScore:
-    """Ask the LLM judge to score *answer* against *gold_claims* on all 7 dimensions."""
+    """
+    Ask the LLM judge to score *answer* against *gold_claims* on all 7 dimensions.
+
+    Raises:
+        GateResponseParseError: (JEV-GATE-001) if the judge's response has no
+            JSON object, is missing a required dimension, or has a non-numeric
+            score. Never silently replaced with a neutral 0.5 guess — a
+            malformed judge response means the evaluation run is unreliable
+            and should stop, not quietly produce fake-looking numbers.
+    """
     prompt = _JUDGE_PROMPT.format(
         question=question, gold_claims="; ".join(gold_claims), answer=answer
     )
     response = client.generate(prompt)
     match = re.search(r"\{.*\}", response.text, re.DOTALL)
     if match is None:
-        # Fail safe: neutral score rather than crash the whole eval run.
-        return QualityScore(**{d: 0.5 for d in _DIMENSIONS})
+        raise GateResponseParseError(
+            f"Quality judge response contained no JSON object. Raw response: {response.text!r}"
+        )
     try:
         payload = json.loads(match.group(0))
-        return QualityScore(**{d: float(payload.get(d, 0.5)) for d in _DIMENSIONS})
-    except (json.JSONDecodeError, ValueError):
-        return QualityScore(**{d: 0.5 for d in _DIMENSIONS})
+        missing = [d for d in _DIMENSIONS if d not in payload]
+        if missing:
+            raise GateResponseParseError(
+                f"Quality judge response is missing dimension(s) {missing}. "
+                f"Raw response: {response.text!r}"
+            )
+        return QualityScore(**{d: float(payload[d]) for d in _DIMENSIONS})
+    except (json.JSONDecodeError, ValueError, TypeError) as exc:
+        raise GateResponseParseError(
+            f"Quality judge response could not be parsed: {exc}. "
+            f"Raw response: {response.text!r}"
+        ) from exc

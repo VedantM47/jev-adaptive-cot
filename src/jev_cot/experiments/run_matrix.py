@@ -22,6 +22,7 @@ from pathlib import Path
 import yaml
 
 from jev_cot.config import ExperimentConfig, load_config
+from jev_cot.errors import JevCotError
 from jev_cot.experiments.evaluate_run import evaluate
 from jev_cot.experiments.run_jevgate import run_jevgate
 from jev_cot.experiments.run_selfgate import run_selfgate
@@ -88,7 +89,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     try:
         results = run_matrix(args.dataset, args.checkpoint_dir, args.log_dir, args.judge_model)
-    except (FileNotFoundError, ValueError, RuntimeError) as exc:
+    except (FileNotFoundError, ValueError, JevCotError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 

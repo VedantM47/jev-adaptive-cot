@@ -13,6 +13,7 @@ import re
 from jev_cot.controller.actions import Action
 from jev_cot.controller.gate import GateDecision
 from jev_cot.controller.state import ControllerState
+from jev_cot.errors import GateResponseParseError
 from jev_cot.models.llm.client import LLMClient, LLMResponse
 
 _PROMPT_TEMPLATE = """You are the control-flow gate for a financial research assistant.
@@ -52,13 +53,30 @@ def _build_prompt(state: ControllerState) -> str:
 
 
 def _parse_response(text: str) -> tuple[Action, float]:
-    """Parse the gate's JSON response, tolerating markdown code fences."""
+    """
+    Parse the gate's JSON response, tolerating markdown code fences.
+
+    Raises:
+        GateResponseParseError: (JEV-GATE-001) if the response has no JSON
+            object, an invalid action name, or a non-numeric confidence.
+            Never silently substituted with a guessed action — a malformed
+            gate response is a real problem that should stop the run, not
+            be masked by a plausible-looking fake decision.
+    """
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if match is None:
-        raise ValueError(f"LLM self-gate response contained no JSON object: {text!r}")
-    payload = json.loads(match.group(0))
-    action = Action(str(payload["action"]).upper())
-    confidence = float(payload.get("confidence", 0.5))
+        raise GateResponseParseError(
+            f"LLM self-gate response contained no JSON object. Raw response: {text!r}"
+        )
+    try:
+        payload = json.loads(match.group(0))
+        action = Action(str(payload["action"]).upper())
+        confidence = float(payload.get("confidence", 0.5))
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        raise GateResponseParseError(
+            f"LLM self-gate response could not be parsed as a valid action/confidence "
+            f"pair: {exc}. Raw response: {text!r}"
+        ) from exc
     confidence = max(0.0, min(1.0, confidence))
     return action, confidence
 
@@ -71,14 +89,13 @@ class LLMSelfGate:
         self.last_response: LLMResponse | None = None
 
     def decide(self, state: ControllerState) -> GateDecision:
+        """
+        Raises:
+            GateResponseParseError: (JEV-GATE-001) if the LLM's response can't
+                be parsed. Propagates — no hardcoded fallback action.
+        """
         prompt = _build_prompt(state)
         response = self._client.generate(prompt)
         self.last_response = response
-        try:
-            action, confidence = _parse_response(response.text)
-        except (ValueError, KeyError, json.JSONDecodeError):
-            # Fail safe rather than crash the whole trajectory on a malformed response.
-            action, confidence = (
-                (Action.STOP, 0.3) if state.num_steps_taken > 0 else (Action.RETRIEVE, 0.3)
-            )
+        action, confidence = _parse_response(response.text)
         return GateDecision(action=action, confidence=confidence, source="llm")

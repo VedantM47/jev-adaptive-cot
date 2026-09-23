@@ -176,3 +176,30 @@ def test_rules_dataset_roundtrip(tmp_path: Path) -> None:
     stats = label_dataset(input_path, output_path)
     assert stats["_total"] == 2
     assert output_path.exists()
+
+
+def test_self_gate_raises_on_malformed_response_no_hardcoded_fallback() -> None:
+    """A malformed gate response must raise JEV-GATE-001, never silently guess an action."""
+    from jev_cot.errors import GateResponseParseError
+    from jev_cot.models.llm.self_gate import LLMSelfGate
+
+    gate = LLMSelfGate(FakeLLMClient(fixed_text="not json at all"))
+    state = ControllerState(
+        question="q",
+        question_type="factual_retrieval",
+        company="MSFT",
+        period="FY2023",  # type: ignore[arg-type]
+    )
+    with pytest.raises(GateResponseParseError) as exc_info:
+        gate.decide(state)
+    assert "JEV-GATE-001" in str(exc_info.value)
+
+
+def test_quality_scorer_raises_on_malformed_response_no_hardcoded_fallback() -> None:
+    """A malformed judge response must raise JEV-GATE-001, never silently return 0.5s."""
+    from jev_cot.errors import GateResponseParseError
+    from jev_cot.evaluation.quality.scorer import score_answer
+
+    with pytest.raises(GateResponseParseError) as exc_info:
+        score_answer(FakeLLMClient(fixed_text="garbage"), "q", ["claim"], "answer")
+    assert "JEV-GATE-001" in str(exc_info.value)

@@ -22,6 +22,8 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from jev_cot.errors import MissingAPIKeyError
+
 load_dotenv()
 
 # Rough, non-billing-accurate per-1M-token rates (USD) — good enough to estimate
@@ -61,7 +63,7 @@ class LLMClient:
 
             api_key = os.environ.get("GEMINI_API_KEY")
             if not api_key:
-                raise RuntimeError(
+                raise MissingAPIKeyError(
                     "GEMINI_API_KEY is not set. Copy .env.example to .env and add your key "
                     "(get one free at https://aistudio.google.com/apikey)."
                 )
