@@ -2,6 +2,8 @@
 
 > **Research system** measuring whether a compact, calibrated classifier (JEV) can safely replace LLM self-gating in an Adaptive Chain-of-Thought pipeline — reducing cost and latency without degrading evidence grounding or answer quality.
 
+**Docs:** [Introduction](docs/INTRO.md) · [Testing Guide](docs/TESTING-GUIDE.md) · [Full Technical Write-up](docs/PROJECT-OVERVIEW.md)
+
 ---
 
 ## Research Questions
@@ -52,32 +54,39 @@ uv run mypy src/
 
 ## Repository Structure
 
+All real code lives under `src/jev_cot/` (the installable package) — that's
+the one to read. The top-level `retrieval/`, `models/`, `controller/`,
+`evaluation/`, `experiments/` folders are empty leftovers from the initial
+scaffold, kept but unused (nothing imports them).
+
 ```
 jev-cot/
+├── app.py                ← Streamlit frontend (calls src/jev_cot/ directly)
+├── docs/                 ← Intro, testing guide, full technical write-up
 ├── .planning/            ← GSD planning artifacts (ROADMAP, REQUIREMENTS, STATE)
-├── src/jev_cot/          ← Installable Python package
+├── src/jev_cot/          ← Installable Python package — ALL real code lives here
 │   ├── config.py         ← Typed experiment config loader (start here)
-│   └── logging.py        ← Loguru dual-sink logging setup
+│   ├── logging.py        ← Loguru dual-sink logging setup
+│   ├── retrieval/        ← Retrieval interface + FAISS backend
+│   ├── models/
+│   │   ├── jev/          ← JEV classifier, training, calibration
+│   │   └── llm/          ← LLM client wrapper, self-gate
+│   ├── controller/       ← Controller loop, actions, state extractor, limits
+│   ├── evaluation/       ← Grounding, quality, latency, cost, calibration metrics
+│   ├── experiments/      ← Run scripts: vanilla / selfgate / jevgate / matrix
+│   ├── analysis/         ← Statistical analysis, error taxonomy, report generator
+│   └── data/             ← Benchmark schema, splitter, trajectory schema
 ├── data/
-│   ├── raw/              ← Seed benchmark examples
-│   ├── processed/        ← Trajectories, JEV training pairs
-│   ├── train/            ← Labeled JEV training data
-│   ├── validation/
-│   └── test/
-├── retrieval/            ← Retrieval interface + FAISS backend
-├── models/
-│   ├── jev/              ← JEV classifier, training, calibration
-│   └── llm/              ← LLM client wrapper, self-gate
-├── controller/           ← Controller loop, actions, state extractor, limits
-├── evaluation/           ← Grounding, quality, latency, cost, calibration metrics
-├── experiments/          ← Run scripts: vanilla / selfgate / jevgate / matrix
+│   ├── raw/              ← Seed benchmark examples + documents
+│   ├── processed/        ← Trajectories, JEV training pairs (generated)
+│   └── train/            ← Labeled JEV training data (generated)
 ├── configs/              ← YAML experiment configs
 │   ├── base.yaml         ← Base config (all fields documented)
 │   └── conditions/       ← Condition A/B/C presets (Phase 2)
-├── logs/                 ← Per-run JSON-lines trajectory logs
-├── analysis/             ← Statistical analysis, plots, error taxonomy
-├── paper/                ← Results summary and figures
-└── tests/                ← pytest test suite
+├── logs/                 ← Per-run JSON-lines trajectory logs (generated)
+├── models/jev/checkpoints/ ← Trained JEV artifacts (generated)
+├── paper/                ← Auto-generated results summary
+└── tests/                ← pytest test suite (139 tests)
 ```
 
 ---
@@ -154,6 +163,18 @@ The FAISS index auto-builds on first use — no separate ingest step needed unle
 Everything above makes real Gemini API calls and costs real (tiny) money — the seed dataset is 9 examples, so a full pass through every command above is a handful of cents on the free/low tier, not more.
 
 **Offline, no API key needed:** `uv run pytest` — the full test suite (139 tests) including `tests/test_pipeline_smoke.py`, which exercises the entire controller loop, JEV train/calibrate/save/load, and evaluation math end-to-end with a fake LLM client.
+
+---
+
+## Frontend
+
+A small Streamlit UI (`app.py`) sits directly on top of the backend above — no separate API layer, it calls the same Python code the CLI scripts use.
+
+```powershell
+uv run streamlit run app.py
+```
+
+Opens at `http://localhost:8501`. Three tabs: **Run a Question** (pick a benchmark question + condition, run it live), **Results** (the factorial matrix table, once `run_matrix.py` has produced one), **About** (the problem statement). See `docs/TESTING-GUIDE.md` §3 for details.
 
 ---
 
