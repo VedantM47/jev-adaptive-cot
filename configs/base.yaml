@@ -1,0 +1,42 @@
+# configs/base.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Example base experiment configuration.
+# All fields are documented in src/jev_cot/config.py (ExperimentConfig).
+#
+# Usage:
+#   from jev_cot.config import load_config
+#   cfg = load_config("configs/base.yaml")
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── LLM ──────────────────────────────────────────────────────────────────────
+llm: "gemini-1.5-pro-latest"
+temperature: 0.0
+max_tokens: 4096
+
+# ── Component versions (required for auditability — PRD §6.6) ────────────────
+prompt_version: "v0.1"
+retrieval_version: "faiss-v0.1"
+dataset_version: "phase1-seed-v0.1"
+jev_version: "none"          # "none" for Conditions A and B
+
+# ── Experimental condition ───────────────────────────────────────────────────
+condition: "vanilla"         # vanilla | selfgate | jevgate
+
+# ── Safety limits ────────────────────────────────────────────────────────────
+max_steps: 15
+max_latency_seconds: 120.0
+max_cost_usd: 1.0
+
+tool_limits:
+  max_retrievals: 10
+  max_branches: 3
+  max_compute_calls: 5
+
+# ── Reproducibility ───────────────────────────────────────────────────────────
+random_seed: 42
+# timestamp is auto-set at load time (UTC ISO-8601); override here to pin it.
+
+# ── Fallback policy (secondary experiment — off by default) ──────────────────
+enable_escalate_fallback: false
+escalate_confidence_threshold: 0.5
+

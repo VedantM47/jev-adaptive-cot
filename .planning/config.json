@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "project": "jev-adaptive-cot-equity-research",
+  "created": "2026-09-23",
+
+  "workflow": {
+    "planning_mode": "standard",
+    "auto_commit": true,
+    "require_plan_approval": true,
+    "require_verify_step": true,
+    "parallel_execution": true,
+    "phase_numbering": "sequential"
+  },
+
+  "model_profile": {
+    "planning": "pro",
+    "execution": "inherit",
+    "research": "flash"
+  },
+
+  "stack": {
+    "language": "python",
+    "python_version": "3.11",
+    "package_manager": "uv",
+    "test_runner": "pytest",
+    "llm_backends": ["gemini-1.5-pro", "gemini-1.5-flash"],
+    "jev_architecture": "gradient_boosted_trees",
+    "retrieval_backend": "faiss_sentence_transformers",
+    "config_format": "yaml",
+    "log_format": "jsonlines"
+  },
+
+  "preferences": {
+    "git_init": true,
+    "initial_commit": true,
+    "structured_logging": true,
+    "type_checking": "mypy",
+    "linting": "ruff"
+  }
+}
