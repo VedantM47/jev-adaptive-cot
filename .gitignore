@@ -18,7 +18,6 @@ wheels/
 .venv
 # ── uv / venv ─────────────────────────────────────────────────────────────────
 .venv/
-.python-version
 
 # ── Logs (keep directory structure, ignore content) ────────────────────────────
 logs/*.jsonl
