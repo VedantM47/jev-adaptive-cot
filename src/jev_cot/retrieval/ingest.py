@@ -126,6 +126,11 @@ def discover_documents(documents_dir: str | Path) -> list[Path]:
     """
     List the ``.txt`` seed documents in *documents_dir*.
 
+    Non-recursive glob (threat T-04-02): a symlinked ``.txt`` entry is
+    refused outright, and any entry whose resolved path escapes the resolved
+    *documents_dir* is refused too, so a malicious or accidental symlink
+    cannot smuggle an arbitrary file into the corpus.
+
     Args:
         documents_dir: Directory to glob (non-recursive).
 
@@ -135,12 +140,25 @@ def discover_documents(documents_dir: str | Path) -> list[Path]:
     Raises:
         FileNotFoundError: If *documents_dir* does not exist.
         ValueError: If *documents_dir* contains no ``.txt`` files (research
-            Pitfall 1: never silently index an empty corpus).
+            Pitfall 1: never silently index an empty corpus), or if an entry
+            is a symlink or resolves outside *documents_dir*.
     """
     dir_path = Path(documents_dir)
     if not dir_path.exists():
         raise FileNotFoundError(f"Documents directory not found: {dir_path.resolve()}")
-    documents = sorted(p for p in dir_path.glob("*.txt") if p.is_file())
+    root = dir_path.resolve()
+
+    documents: list[Path] = []
+    for path in sorted(dir_path.glob("*.txt")):
+        if path.is_symlink():
+            raise ValueError(f"Refusing symlinked document: {path}")
+        if not path.is_file():
+            continue
+        resolved = path.resolve()
+        if not resolved.is_relative_to(root):
+            raise ValueError(f"Document resolves outside {root}: {path}")
+        documents.append(path)
+
     if not documents:
         raise ValueError(f"No .txt documents found in {dir_path.resolve()}")
     return documents

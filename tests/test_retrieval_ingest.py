@@ -37,7 +37,13 @@ from jev_cot.retrieval.faiss_retriever import (
     IndexManifest,
     SentenceTransformerEmbedder,
 )
-from jev_cot.retrieval.ingest import main
+from jev_cot.retrieval.ingest import (
+    chunk_text,
+    discover_documents,
+    load_chunks,
+    main,
+    read_document,
+)
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -200,3 +206,122 @@ def test_cli_overrides_take_precedence(
 
     assert (real_index_dir / INDEX_FILENAME).exists()
     assert not yaml_index_dir.exists()
+
+
+# AC-H1 discovery / AC-H2 chunking ──────────────────────────────────────────────
+def test_discover_rejects_symlink(tmp_path: Path) -> None:
+    """A *.txt symlink inside documents_dir, even to a file outside it, is refused."""
+    documents_dir = tmp_path / "docs"
+    documents_dir.mkdir()
+    outside_target = tmp_path / "outside.txt"
+    outside_target.write_text("ACME Corp reported revenue growth.\n", encoding="utf-8")
+    link_path = documents_dir / "ACME_10K_FY23.txt"
+
+    try:
+        link_path.symlink_to(outside_target)
+    except OSError:
+        pytest.skip("os.symlink not permitted in this environment (e.g. Windows without privilege)")
+
+    with pytest.raises(ValueError, match="symlink"):
+        discover_documents(documents_dir)
+
+
+def test_discover_ignores_non_txt_and_subdirectories(tmp_path: Path) -> None:
+    """Non-.txt files and files in subdirectories are excluded; results are sorted."""
+    documents_dir = tmp_path / "docs"
+    documents_dir.mkdir()
+    (documents_dir / "README.md").write_text("not a document", encoding="utf-8")
+    sub = documents_dir / "sub"
+    sub.mkdir()
+    (sub / "ACME_10K_FY23.txt").write_text("nested, should be ignored", encoding="utf-8")
+    (documents_dir / "ZEBRA_10K_FY23.txt").write_text("zebra doc", encoding="utf-8")
+    (documents_dir / "ACME_10K_FY23.txt").write_text("acme doc", encoding="utf-8")
+
+    found = discover_documents(documents_dir)
+
+    assert found == sorted(found)
+    assert [p.name for p in found] == ["ACME_10K_FY23.txt", "ZEBRA_10K_FY23.txt"]
+
+
+def test_bad_filename_error_names_the_file(tmp_path: Path) -> None:
+    """A filename that doesn't match the document-id convention names itself in the error."""
+    documents_dir = tmp_path / "docs"
+    documents_dir.mkdir()
+    (documents_dir / "notes.txt").write_text("some notes", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="notes.txt"):
+        load_chunks(documents_dir, max_words=120, overlap_words=20)
+
+
+def test_comment_only_document_rejected(tmp_path: Path) -> None:
+    """A document containing only comment lines yields zero chunks -> ValueError."""
+    documents_dir = tmp_path / "docs"
+    documents_dir.mkdir()
+    (documents_dir / "ACME_10K_FY23.txt").write_text(
+        "# just a disclaimer\n# nothing else here\n", encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError):
+        load_chunks(documents_dir, max_words=120, overlap_words=20)
+
+
+def test_chunk_text_short_paragraphs() -> None:
+    """Three short one-line paragraphs become exactly 3 chunks, whitespace collapsed."""
+    text = "para   one.\n\npara two.\n\npara  three.\n"
+
+    chunks = chunk_text(text, max_words=120, overlap_words=20)
+
+    assert chunks == ["para one.", "para two.", "para three."]
+
+
+def test_chunk_text_windows_long_paragraph() -> None:
+    """A 250-word paragraph windows into 3 chunks of [0:120], [100:220], [200:250]."""
+    words = [f"w{i}" for i in range(250)]
+    text = " ".join(words)
+
+    chunks = chunk_text(text, max_words=120, overlap_words=20)
+
+    assert len(chunks) == 3
+    assert chunks[0] == " ".join(words[0:120])
+    assert chunks[1] == " ".join(words[100:220])
+    assert chunks[2] == " ".join(words[200:250])
+    for chunk in chunks:
+        assert len(chunk.split()) <= 120
+    # Consecutive chunks share exactly the last/first 20 words of the window step.
+    assert chunks[0].split()[-20:] == chunks[1].split()[:20]
+    assert chunks[1].split()[-20:] == chunks[2].split()[:20]
+
+
+def test_chunk_text_exact_window() -> None:
+    """A paragraph of exactly max_words words becomes a single chunk."""
+    words = [f"w{i}" for i in range(120)]
+    text = " ".join(words)
+
+    chunks = chunk_text(text, max_words=120, overlap_words=20)
+
+    assert len(chunks) == 1
+    assert chunks[0] == text
+
+
+def test_chunk_text_empty_and_invalid() -> None:
+    """Empty/whitespace-only text yields no chunks; overlap >= max_words is rejected."""
+    assert chunk_text("", max_words=120, overlap_words=20) == []
+    assert chunk_text("   \n\n  ", max_words=120, overlap_words=20) == []
+
+    with pytest.raises(ValueError):
+        chunk_text("some words here", max_words=10, overlap_words=10)
+
+
+def test_read_document_skips_comment_lines(tmp_path: Path) -> None:
+    """Lines starting with '#' (after lstrip) are absent from the returned text."""
+    path = tmp_path / "ACME_10K_FY23.txt"
+    path.write_text(
+        "# synthetic data disclaimer\nReal paragraph text.\n  # indented comment\nMore text.\n",
+        encoding="utf-8",
+    )
+
+    text = read_document(path)
+
+    assert "#" not in text
+    assert "Real paragraph text." in text
+    assert "More text." in text
