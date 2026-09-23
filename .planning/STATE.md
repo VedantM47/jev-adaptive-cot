@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1
 current_phase: Phase 1 (Repo Scaffolding) — not yet started
 status: unknown
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-09-23T17:56:08.280Z"
-state_head: 7623672c4dfe0e3fc7eb0cd156d8de80772f6ffc
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-09-23T18:13:40.088Z"
+state_head: 667fcd048b49bcd056780084cddcd0c09db3c874
 progress:
   total_phases: 19
   completed_phases: 0
   total_plans: 8
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -112,14 +112,16 @@ After Phase 15 (factorial experiment):
 |------|----------|-------|-------|
 | Phase 04 P01 | 25min | 3 tasks | 5 files |
 | Phase 04 P02 | 55min | 1 tasks | 7 files |
+| Phase 04 P04 | 20min | 2 tasks | 10 files |
 
 ## Decisions
 
 - [Phase Phase 1 (Repo Scaffolding) — not yet started]: Phase 4 Plan 1: RetrievalConfig nested in ExperimentConfig; faiss-cpu/sentence-transformers/torch(CPU)/numpy installed after human-approved package-legitimacy checkpoint
 - [Phase Phase 1 (Repo Scaffolding) — not yet started]: Phase 4 Plan 2: RetrievalBackend ABC (template-method retrieve()), FaissRetriever over IndexFlatL2 with cosine-similarity scoring, ingest pipeline, and the first synthetic seed document (MSFT_10K_FY23) proven end-to-end by a tracer test
+- [Phase Phase 1 (Repo Scaffolding) — not yet started]: CAT_10K_FY23 reworded to remove lexical overlap between decoy paragraphs and the machine-sales evidence paragraph, so EQ_004 evidence recalls within top_k=3
 
 ## Session
 
-**Last session:** 2026-09-23T17:56:08.225Z
-**Stopped at:** Completed 04-02-PLAN.md
+**Last session:** 2026-09-23T18:13:40.047Z
+**Stopped at:** Completed 04-04-PLAN.md
 **Resume file:** None
