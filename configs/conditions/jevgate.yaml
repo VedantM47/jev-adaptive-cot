@@ -1,6 +1,6 @@
 # configs/conditions/jevgate.yaml
 # JEV-gate: Compact trained classifier chooses next action.
-llm: "gemini-1.5-pro-latest"
+llm: "gemini-flash-lite-latest"
 condition: "jevgate"
 
 # Required version fields

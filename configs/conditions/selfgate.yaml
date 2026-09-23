@@ -1,6 +1,6 @@
 # configs/conditions/selfgate.yaml
 # Self-gate: LLM chooses next action at each step.
-llm: "gemini-1.5-pro-latest"
+llm: "gemini-flash-lite-latest"
 condition: "selfgate"
 
 # Required version fields

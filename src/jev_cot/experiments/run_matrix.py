@@ -28,7 +28,7 @@ from jev_cot.experiments.run_jevgate import run_jevgate
 from jev_cot.experiments.run_selfgate import run_selfgate
 from jev_cot.experiments.run_vanilla import run_vanilla
 
-_LLMS = ("gemini-1.5-pro-latest", "gemini-1.5-flash-latest")
+_LLMS = ("gemini-pro-latest", "gemini-flash-latest")
 _CONDITIONS = ("vanilla", "selfgate", "jevgate")
 
 
@@ -43,7 +43,7 @@ def run_matrix(
     dataset_path: str = "data/raw/sample_examples.jsonl",
     checkpoint_dir: str = "models/jev/checkpoints/jev_frozen_v1",
     log_dir: str = "logs/matrix_runs",
-    judge_model: str = "gemini-1.5-flash-latest",
+    judge_model: str = "gemini-flash-latest",
 ) -> dict[str, dict[str, object]]:
     base = load_config("configs/base.yaml")
     results: dict[str, dict[str, object]] = {}
@@ -84,7 +84,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--dataset", default="data/raw/sample_examples.jsonl")
     parser.add_argument("--checkpoint-dir", default="models/jev/checkpoints/jev_frozen_v1")
     parser.add_argument("--log-dir", default="logs/matrix_runs")
-    parser.add_argument("--judge-model", default="gemini-1.5-flash-latest")
+    parser.add_argument("--judge-model", default="gemini-flash-latest")
     args = parser.parse_args(argv)
 
     try:

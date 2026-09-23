@@ -8,7 +8,7 @@ Usage::
 
     from jev_cot.models.llm.client import LLMClient
 
-    client = LLMClient(model="gemini-1.5-flash-latest", temperature=0.0, max_tokens=1024)
+    client = LLMClient(model="gemini-flash-latest", temperature=0.0, max_tokens=1024)
     response = client.generate("What is 2+2?")
     print(response.text, response.cost_usd, response.latency_ms)
 """
@@ -29,10 +29,10 @@ load_dotenv()
 # Rough, non-billing-accurate per-1M-token rates (USD) — good enough to estimate
 # relative cost between conditions, which is what this project actually needs.
 _RATES_PER_1M_TOKENS: dict[str, tuple[float, float]] = {
-    "gemini-1.5-pro-latest": (1.25, 5.00),
-    "gemini-1.5-flash-latest": (0.075, 0.30),
-    "gemini-1.5-flash": (0.075, 0.30),
-    "gemini-1.5-pro": (1.25, 5.00),
+    "gemini-pro-latest": (1.25, 5.00),
+    "gemini-flash-latest": (0.075, 0.30),
+    "gemini-3.5-flash": (0.075, 0.30),
+    "gemini-3.1-pro-preview": (1.25, 5.00),
 }
 _DEFAULT_RATE = (0.50, 1.50)
 

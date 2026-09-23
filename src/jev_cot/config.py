@@ -110,7 +110,7 @@ class ExperimentConfig(BaseModel):
     )
 
     # ── LLM ───────────────────────────────────────────────────────────────────
-    llm: str = Field(description="LLM model name, e.g. 'gemini-1.5-pro-latest'")
+    llm: str = Field(description="LLM model name, e.g. 'gemini-pro-latest'")
     temperature: float = Field(ge=0.0, le=2.0, default=0.0)
     max_tokens: int = Field(ge=1, default=4096)
 

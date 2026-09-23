@@ -32,7 +32,7 @@ from jev_cot.models.llm.client import LLMClient
 def evaluate(
     trajectories_path: str,
     dataset_path: str = "data/raw/sample_examples.jsonl",
-    judge_model: str = "gemini-1.5-flash-latest",
+    judge_model: str = "gemini-flash-latest",
     scored_out: str | None = None,
 ) -> dict[str, float]:
     trajectories = load_trajectories(trajectories_path)
@@ -86,7 +86,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Evaluate a trajectories file.")
     parser.add_argument("--trajectories", required=True)
     parser.add_argument("--dataset", default="data/raw/sample_examples.jsonl")
-    parser.add_argument("--judge-model", default="gemini-1.5-flash-latest")
+    parser.add_argument("--judge-model", default="gemini-flash-latest")
     parser.add_argument("--scored-out", default=None)
     args = parser.parse_args(argv)
 
