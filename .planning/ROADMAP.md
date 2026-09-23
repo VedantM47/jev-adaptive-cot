@@ -12,7 +12,7 @@
 
 ---
 
-### Phase 1 — Repo Scaffolding & Config System
+### Phase 1: Repo Scaffolding & Config System
 **Status:** `[x] done`  
 **Source:** PRD Chunk 0  
 **Dependencies:** none
@@ -38,7 +38,7 @@
 
 ---
 
-### Phase 2 — Research Spec as Machine-Readable Artifacts
+### Phase 2: Research Spec as Machine-Readable Artifacts
 **Status:** `[x] done`  
 **Source:** PRD Chunk 1  
 **Dependencies:** Phase 1
@@ -60,8 +60,7 @@
 
 ---
 
-### Phase 3 — Equity Research Benchmark: Schema & Loader
-**Status:** `[ ] pending`  
+### Phase 3: Equity Research Benchmark: Schema & Loader
 **Status:** `[x] done`  
 **Source:** PRD Chunk 2  
 **Dependencies:** Phase 1
@@ -84,7 +83,7 @@
 
 ---
 
-### Phase 4 — Retrieval Layer
+### Phase 4: Retrieval Layer
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 3  
 **Dependencies:** Phase 3
@@ -106,7 +105,7 @@
 
 ---
 
-### Phase 5 — Vanilla LLM Baseline (Condition A)
+### Phase 5: Vanilla LLM Baseline (Condition A)
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 4  
 **Dependencies:** Phase 4
@@ -126,7 +125,7 @@
 
 ---
 
-### Phase 6 — Structured State Extractor
+### Phase 6: Structured State Extractor
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 5  
 **Dependencies:** Phase 5
@@ -146,7 +145,7 @@
 
 ---
 
-### Phase 7 — Adaptive CoT with LLM Self-Gate (Condition B) + Controller
+### Phase 7: Adaptive CoT with LLM Self-Gate (Condition B) + Controller
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 6  
 **Dependencies:** Phase 6
@@ -172,7 +171,7 @@
 
 ---
 
-### Phase 8 — Trajectory Collection for JEV Training
+### Phase 8: Trajectory Collection for JEV Training
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 7  
 **Dependencies:** Phase 7
@@ -192,7 +191,7 @@
 
 ---
 
-### Phase 9 — JEV Label Generation Pipeline
+### Phase 9: JEV Label Generation Pipeline
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 8  
 **Dependencies:** Phase 8
@@ -214,7 +213,7 @@
 
 ---
 
-### Phase 10 — JEV Model Training
+### Phase 10: JEV Model Training
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 9  
 **Dependencies:** Phase 9
@@ -237,7 +236,7 @@
 
 ---
 
-### Phase 11 — JEV Calibration
+### Phase 11: JEV Calibration
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 10  
 **Dependencies:** Phase 10
@@ -257,7 +256,7 @@
 
 ---
 
-### Phase 12 — JEV Integration into Controller (Condition C)
+### Phase 12: JEV Integration into Controller (Condition C)
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 11  
 **Dependencies:** Phase 11, Phase 7
@@ -278,7 +277,7 @@
 
 ---
 
-### Phase 13 — Evaluation Suite: Efficiency, Latency & Cost
+### Phase 13: Evaluation Suite: Efficiency, Latency & Cost
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 12  
 **Dependencies:** Phase 8 (trajectory format); can run in parallel with Phases 9–12
@@ -296,7 +295,7 @@
 
 ---
 
-### Phase 14 — Evaluation Suite: Grounding & Answer Quality
+### Phase 14: Evaluation Suite: Grounding & Answer Quality
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 13  
 **Dependencies:** Phase 8 (trajectory format); can run in parallel with Phases 9–12
@@ -316,7 +315,7 @@
 
 ---
 
-### Phase 15 — Full Factorial Experiment Runner
+### Phase 15: Full Factorial Experiment Runner
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 14  
 **Dependencies:** Phases 5, 12, 13, 14
@@ -335,7 +334,7 @@
 
 ---
 
-### Phase 16 — Ablation Suite
+### Phase 16: Ablation Suite
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 15  
 **Dependencies:** Phase 15
@@ -354,7 +353,7 @@
 
 ---
 
-### Phase 17 — Oracle Gate Experiment
+### Phase 17: Oracle Gate Experiment
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 16  
 **Dependencies:** Phase 15
@@ -370,7 +369,7 @@
 
 ---
 
-### Phase 18 — Error Taxonomy & Failure Analysis
+### Phase 18: Error Taxonomy & Failure Analysis
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 17  
 **Dependencies:** Phase 15
@@ -387,7 +386,7 @@
 
 ---
 
-### Phase 19 — Statistical Analysis & Final Reporting
+### Phase 19: Statistical Analysis & Final Reporting
 **Status:** `[ ] pending`  
 **Source:** PRD Chunk 18  
 **Dependencies:** Phases 15, 16, 17, 18
