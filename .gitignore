@@ -19,6 +19,9 @@ wheels/
 # ── uv / venv ─────────────────────────────────────────────────────────────────
 .venv/
 
+# ── GSD agent worktree scratch space ─────────────────────────────────────────
+.claude/worktrees/
+
 # ── Logs (keep directory structure, ignore content) ────────────────────────────
 logs/*.jsonl
 logs/*.log
