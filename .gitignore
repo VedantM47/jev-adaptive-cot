@@ -53,6 +53,7 @@ coverage.xml
 # ── Secrets / keys ────────────────────────────────────────────────────────────
 .env
 .env.*
+!.env.example
 *.key
 *.pem
 

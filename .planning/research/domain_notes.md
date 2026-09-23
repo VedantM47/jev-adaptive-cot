@@ -108,9 +108,12 @@ The split must never leak: if a company appears in train, all its questions are 
 
 ```python
 import hashlib
+
+
 def company_hash(company_id: str, seed: int) -> float:
     h = hashlib.md5(f"{company_id}:{seed}".encode()).hexdigest()
     return int(h, 16) / (16**32)  # deterministic float in [0, 1)
+
 
 # Then: < 0.70 → train, < 0.85 → val, else → test
 ```

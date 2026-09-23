@@ -13,6 +13,11 @@ dependencies = [
     "sentence-transformers>=6.1.0",
     "torch>=2.2",
     "numpy>=1.26",
+    "google-genai>=1.0",
+    "python-dotenv>=1.0",
+    "scikit-learn>=1.5",
+    "xgboost>=2.1",
+    "scipy>=1.13",
 ]
 
 [project.optional-dependencies]
@@ -41,6 +46,9 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+# N806/N803: X/y is the standard scikit-learn/numpy convention throughout the
+# JEV training code (models/jev/, experiments/ablations/) — not a naming bug.
+ignore = ["N806", "N803"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -57,6 +65,14 @@ module = [
     "torch.*",
     "transformers",
     "transformers.*",
+    "google.genai",
+    "google.genai.*",
+    "sklearn",
+    "sklearn.*",
+    "xgboost",
+    "xgboost.*",
+    "scipy",
+    "scipy.*",
 ]
 follow_imports = "skip"
 

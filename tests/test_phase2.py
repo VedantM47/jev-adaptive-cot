@@ -3,8 +3,9 @@ Tests for Phase 2 deliverables: Action enum, config presets, and metrics registr
 """
 
 from pathlib import Path
-from jev_cot.controller.actions import Action
+
 from jev_cot.config import load_config
+from jev_cot.controller.actions import Action
 from jev_cot.evaluation.metrics_registry import METRICS
 
 

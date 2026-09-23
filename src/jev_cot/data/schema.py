@@ -5,7 +5,7 @@ Canonical data format for the Equity Research Benchmark.
 """
 
 from enum import StrEnum
-from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -32,15 +32,15 @@ class BenchmarkExample(BaseModel):
     period: str = Field(description="Fiscal period (e.g. FY2023)")
     question: str = Field(description="The research question to be answered")
     type: QuestionType = Field(description="The category of the question")
-    documents: List[str] = Field(
+    documents: list[str] = Field(
         description="List of document identifiers required to answer the question"
     )
-    gold_claims: List[str] = Field(
+    gold_claims: list[str] = Field(
         description="List of factual claims that must be present in a correct answer"
     )
-    required_evidence: List[str] = Field(
+    required_evidence: list[str] = Field(
         description="List of evidence excerpts required to support the claims"
     )
-    difficulty: Optional[float] = Field(
+    difficulty: float | None = Field(
         default=None, ge=0.0, le=1.0, description="Optional difficulty score from 0.0 to 1.0"
     )

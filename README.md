@@ -101,10 +101,59 @@ Key fields (all required for auditability — PRD §6.6):
 
 ```python
 from jev_cot.config import load_config
+
 cfg = load_config("configs/base.yaml")
-print(cfg.llm)          # gemini-1.5-pro-latest
-print(cfg.condition)    # vanilla
+print(cfg.llm)  # gemini-1.5-pro-latest
+print(cfg.condition)  # vanilla
 ```
+
+---
+
+## Running the Full Pipeline
+
+**1. Get a Gemini API key** (free tier is plenty): https://aistudio.google.com/apikey
+
+**2. Set it up:**
+```powershell
+cp .env.example .env
+# then edit .env and paste your key after GEMINI_API_KEY=
+```
+
+**3. Run each stage, in order** (each is also runnable as `python -m jev_cot.<module>`):
+```powershell
+# Baselines
+uv run python -m jev_cot.experiments.run_vanilla       # Condition A
+uv run python -m jev_cot.experiments.run_selfgate      # Condition B
+
+# Collect (state, action) pairs from Condition B, then train + calibrate + freeze JEV
+uv run python -m jev_cot.experiments.collect_trajectories
+uv run python -m jev_cot.models.jev.labeling.rules
+uv run python -m jev_cot.models.jev.train
+uv run python -m jev_cot.models.jev.calibrate
+
+# Condition C, now that a frozen JEV checkpoint exists
+uv run python -m jev_cot.experiments.run_jevgate
+
+# Oracle upper bound
+uv run python -m jev_cot.experiments.run_oracle
+
+# Score any trajectories file for grounding + answer quality
+uv run python -m jev_cot.experiments.evaluate_run --trajectories logs/<run>_trajectories.jsonl
+
+# Full factorial matrix (the primary result) + auto-generated report
+uv run python -m jev_cot.experiments.run_matrix
+uv run python -m jev_cot.analysis.generate_report
+
+# Ablations
+uv run python -m jev_cot.experiments.ablations.size_ablation
+uv run python -m jev_cot.experiments.ablations.feature_ablations
+```
+
+The FAISS index auto-builds on first use — no separate ingest step needed unless you want to rebuild it (`python -m jev_cot.retrieval.ingest`).
+
+Everything above makes real Gemini API calls and costs real (tiny) money — the seed dataset is 9 examples, so a full pass through every command above is a handful of cents on the free/low tier, not more.
+
+**Offline, no API key needed:** `uv run pytest` — the full test suite (139 tests) including `tests/test_pipeline_smoke.py`, which exercises the entire controller loop, JEV train/calibrate/save/load, and evaluation math end-to-end with a fake LLM client.
 
 ---
 
@@ -115,11 +164,25 @@ See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for the full 19-phase impleme
 | Phase | Description | Status |
 |---|---|---|
 | 1 | Repo scaffolding & config system | ✅ done |
-| 2 | Action enum + condition presets | pending |
-| 3 | Benchmark schema + loader | pending |
-| 4 | Retrieval layer (FAISS) | pending |
-| 5 | Vanilla LLM baseline (Condition A) | pending |
-| … | … | … |
+| 2 | Action enum + condition presets | ✅ done |
+| 3 | Benchmark schema + loader | ✅ done |
+| 4 | Retrieval layer (FAISS) | ✅ done |
+| 5 | Vanilla LLM baseline (Condition A) | ✅ built (needs API key to run) |
+| 6 | Structured state extractor | ✅ built |
+| 7 | Self-gate + controller loop (Condition B) | ✅ built (needs API key to run) |
+| 8 | Trajectory collection | ✅ built |
+| 9 | JEV label generation (rule-based) | ✅ built |
+| 10 | JEV model training (S/M/L) | ✅ built |
+| 11 | JEV calibration + freeze | ✅ built |
+| 12 | JEV integration (Condition C) | ✅ built (needs API key to run) |
+| 13-14 | Evaluation suite (efficiency/latency/grounding/quality) | ✅ built |
+| 15 | Full factorial experiment runner | ✅ built |
+| 16 | Ablation suite (size + feature) | ✅ built |
+| 17 | Oracle gate | ✅ built |
+| 18 | Error taxonomy | ✅ built |
+| 19 | Statistics + auto-generated report | ✅ built |
+
+"Built" means the code is written, imports cleanly, passes mypy --strict and ruff, and is exercised by an offline smoke test — but anything touching Gemini needs your API key in `.env` to actually run and hasn't been live-tested against the real API yet.
 
 ---
 

@@ -217,7 +217,7 @@ dim = 384  # all-MiniLM-L6-v2 output dimensionality
 base_index = faiss.IndexFlatL2(dim)
 index = faiss.IndexIDMap(base_index)
 
-vectors = embeddings.astype(np.float32)          # shape (n_chunks, dim)
+vectors = embeddings.astype(np.float32)  # shape (n_chunks, dim)
 ids = np.arange(len(vectors), dtype=np.int64)
 index.add_with_ids(vectors, ids)
 

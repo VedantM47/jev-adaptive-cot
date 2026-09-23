@@ -7,6 +7,7 @@ CLI tool to validate a JSONL dataset against the BenchmarkExample schema.
 import argparse
 import sys
 from pathlib import Path
+
 import jsonlines
 from pydantic import ValidationError
 

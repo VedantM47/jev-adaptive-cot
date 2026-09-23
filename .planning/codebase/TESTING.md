@@ -152,16 +152,18 @@ def _create_dummy_data(
         for i in range(num_companies):
             comp = f"COMP_{i}"
             for j in range(examples_per_company):
-                writer.write({
-                    "id": f"{comp}_{j}",
-                    "company": comp,
-                    "period": "FY20",
-                    "question": "Q",
-                    "type": "factual_retrieval",
-                    "documents": [],
-                    "gold_claims": [],
-                    "required_evidence": [],
-                })
+                writer.write(
+                    {
+                        "id": f"{comp}_{j}",
+                        "company": comp,
+                        "period": "FY20",
+                        "question": "Q",
+                        "type": "factual_retrieval",
+                        "documents": [],
+                        "gold_claims": [],
+                        "required_evidence": [],
+                    }
+                )
     return p
 ```
 
@@ -292,6 +294,7 @@ def test_temperature_out_of_range_raises(self, tmp_path: Path) -> None:
     with pytest.raises(ValidationError):
         load_config(p)
 
+
 def test_negative_max_steps_raises(self, tmp_path: Path) -> None:
     """max_steps < 1 raises ValidationError."""
     p = _minimal_yaml(tmp_path, extra="max_steps: 0\n")
@@ -336,8 +339,8 @@ def test_split_no_overlap(tmp_path: Path):
 **Example from `tests/test_config.py`:**
 
 ```python
-
 # ── Test suite ────────────────────────────────────────────────────────────────
+
 
 class TestLoadConfig:
     # AC-1, AC-5 ──────────────────────────────────────────────────────────────

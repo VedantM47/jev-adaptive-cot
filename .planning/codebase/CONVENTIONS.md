@@ -227,11 +227,7 @@ def load_config(path: str | Path) -> ExperimentConfig:
 - Example from `src/jev_cot/config.py`:
 
 ```python
-max_retrievals: int = Field(
-    ge=1, 
-    default=10, 
-    description="Max retrieval calls per trajectory"
-)
+max_retrievals: int = Field(ge=1, default=10, description="Max retrieval calls per trajectory")
 ```
 
 ## Function Design
@@ -309,7 +305,8 @@ def main() -> None:
     parser.add_argument("...", type=str, help="...")
     args = parser.parse_args()
     # execute logic
-    
+
+
 if __name__ == "__main__":
     main()
 ```

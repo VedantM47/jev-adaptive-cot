@@ -3,9 +3,10 @@ Tests for jev_cot.data dataset splitting logic.
 """
 
 from pathlib import Path
+
 import jsonlines
-import pytest
-from jev_cot.data.split import split_dataset, get_company_hash
+
+from jev_cot.data.split import get_company_hash, split_dataset
 
 
 def _create_dummy_data(
