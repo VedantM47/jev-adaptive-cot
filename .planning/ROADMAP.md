@@ -103,6 +103,15 @@
 
 **Non-goals:** Real SEC filings integration; production-scale indexing.
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — RetrievalConfig in YAML + package-legitimacy gate + install faiss-cpu/sentence-transformers/CPU torch (wave 1, checkpoint)
+- [ ] 04-02-PLAN.md — Tracer: MSFT seed doc → ingest → FAISS → RetrievalBackend.retrieve() with tagging + latency logging (wave 2)
+- [ ] 04-03-PLAN.md — Interface contract: swap test, latency-to-JSONL, contract violations, doc-ID tier tagging (wave 3)
+- [ ] 04-04-PLAN.md — Full 9-doc synthetic seed corpus + full-corpus end-to-end retrieval tests (wave 3)
+- [ ] 04-05-PLAN.md — Config-driven ingest CLI, .gitignore for index, discovery hardening, load robustness + determinism (wave 3)
+
 ---
 
 ### Phase 5: Vanilla LLM Baseline (Condition A)
