@@ -11,10 +11,10 @@
 | Item | Value |
 |---|---|
 | Active Milestone | M1 — Research System v1 |
-| Active Phase | Phase 1 — Repo Scaffolding & Config System |
+| Active Phase | Phase 2 — Research Spec as Machine-Readable Artifacts |
 | Phase Status | Complete |
-| Phases Complete | 1 / 19 |
-| Last Commit | feat: Phase 1 — repo scaffold, config loader, logging, CI stub |
+| Phases Complete | 2 / 19 |
+| Last Commit | feat: Phase 2 — Research spec as machine-readable artifacts |
 
 ---
 
@@ -51,7 +51,7 @@
 | Phase | Started | Completed | Notes |
 |---|---|---|---|
 | Phase 1 | 2026-09-23 | 2026-09-23 | Completed repo scaffold and config loader |
-| Phase 2 | — | — | |
+| Phase 2 | 2026-09-23 | 2026-09-23 | Implemented Action enum, config presets, metrics registry stubs |
 | Phase 3 | — | — | |
 | … | — | — | |
 

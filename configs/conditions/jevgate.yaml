@@ -7,4 +7,5 @@ condition: "jevgate"
 prompt_version: "v0.1"
 retrieval_version: "faiss-v0.1"
 dataset_version: "phase1-seed-v0.1"
-jev_version: "jev_frozen_v1"  # Needs to match the frozen artifact
+jev_version: "jev_frozen_v1" # Needs to match the frozen artifact
+

@@ -39,7 +39,7 @@
 ---
 
 ### Phase 2 — Research Spec as Machine-Readable Artifacts
-**Status:** `[ ] pending`  
+**Status:** `[x] done`  
 **Source:** PRD Chunk 1  
 **Dependencies:** Phase 1
 
