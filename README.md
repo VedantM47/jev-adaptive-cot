@@ -1,12 +1,97 @@
-# JEV-Gated Adaptive Chain-of-Thought for Equity Research
+# Jev Decision Assistant
 
-> **Research system** measuring whether a compact, calibrated classifier (JEV) can safely replace LLM self-gating in an Adaptive Chain-of-Thought pipeline — reducing cost and latency without degrading evidence grounding or answer quality.
+An open-source, local-first decision assistant. Ask a "should I choose A or B?" question and get a probability for each option from an open-source Jev model, followed by a recommendation grounded in those numbers.
 
-**Docs:** [Introduction](docs/INTRO.md) · [Testing Guide](docs/TESTING-GUIDE.md) · [Full Technical Write-up](docs/PROJECT-OVERVIEW.md)
+It replaces the paid TypeSafe AI Jev API. With `ollama/qwen3:8b` used for both Jev and the answer LLM, **no API key is required**. Gemini is optional (`GEMINI_API_KEY`).
 
 ---
 
-## Research Questions
+## What it does
+
+You ask a decision question:
+
+> I'm a CS student who loves math. Should I choose data science or product management?
+
+1. **Router** - a zero-token heuristic (regex, no LLM call) decides whether the question is a choice among 2-8 options, and extracts the options. Earlier sentences become the context.
+2. **Jev** - the open-source Jev (Qwen3, Apache-2.0, run locally via Ollama) scores each option. It reads next-token logprobs over option letters and averages them across option-order permutations, which reduces position bias. The result is a probability per option.
+3. **LLM** - writes a short recommendation grounded in those probabilities (it is instructed not to invent different numbers).
+4. **Non-decision questions** skip Jev and go straight to the LLM.
+
+```
+                      decision?
+ question --> router ----yes----> Jev (probabilities) --> LLM --> grounded answer
+                 |                  Qwen3 via Ollama
+                 +-----no---------------------------------> LLM --> plain answer
+```
+
+If Ollama is not running, a clear error is raised. There is no silent fallback.
+
+---
+
+## Setup
+
+Prerequisites: Python >= 3.11, [uv](https://docs.astral.sh/uv/), and [Ollama](https://ollama.com) >= 0.12.11 (needed for logprobs).
+
+```powershell
+winget install Ollama.Ollama
+ollama pull qwen3:8b
+uv sync --extra dev
+```
+
+Then use either interface:
+
+```powershell
+# Streamlit app: open the tab "Ask (Jev Decision)"
+uv run streamlit run app.py
+
+# CLI
+uv run python scripts/ask.py "I'm a CS student who loves math. Should I choose data science or product management?"
+```
+
+The CLI takes `--llm` to pick the answer model (default `ollama/qwen3:8b`). The app offers `ollama/qwen3:8b` and `gemini-flash-lite-latest`; Gemini needs `GEMINI_API_KEY` (copy `.env.example` to `.env`).
+
+### Configuration
+
+Settings live in the `decision:` block of [`configs/base.yaml`](configs/base.yaml):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `jev_model` | `qwen3:8b` | Ollama model used as Jev |
+| `ollama_host` | `http://localhost:11434` | Where Ollama is served |
+| `n_permutations` | `3` | Option orderings averaged to cancel position bias |
+| `use_llm_router` | `false` | Enable the token-costing LLM fallback router (the heuristic router is free) |
+
+### Example output
+
+Illustrative only. Your numbers will differ by model and run.
+
+```
+JEV DECISION (model=qwen3:8b, 3 samples)
+- data science: 58.0%
+- product management: 42.0%
+Top: data science (confidence 0.58)
+
+Data science looks like the better fit (58% vs 42%). Your love of math maps
+directly onto modeling and statistics, and CS skills give you a head start on
+the engineering side. The gap is modest, so if you care more about shaping
+what gets built than how it is analysed, product management could tip it.
+```
+
+If the top confidence is below 0.55, the LLM is told to say the call is close and name what would tip it.
+
+### Limitations
+
+The probabilities are LLM next-token logprobs, normalised over the options. Treat them as a rough prior, not a calibrated forecast. Option extraction is heuristic, so unusual phrasings may not be detected as decisions.
+
+---
+
+## Research background
+
+This repository also contains the research system the decision layer grew out of: JEV-gated Adaptive Chain-of-Thought for equity research. It tests whether a compact, calibrated classifier (JEV) can safely replace LLM self-gating, cutting cost and latency without hurting evidence grounding or answer quality.
+
+Docs: [Introduction](docs/INTRO.md) · [Testing Guide](docs/TESTING-GUIDE.md) · [Technical Write-up](docs/PROJECT-OVERVIEW.md)
+
+### Hypotheses
 
 | # | Hypothesis |
 |---|---|
@@ -17,239 +102,63 @@
 | H5 | Answer quality stays comparable |
 | H6 | JEV's confidence is calibrated |
 
-Primary comparison: **Condition B (LLM self-gate) vs Condition C (JEV gate)** — same LLM, same retrieval, same tools, same synthesis. The gate is the **only** variable.
+### Conditions
 
----
+- `vanilla` - plain LLM baseline (Condition A)
+- `selfgate` - the LLM decides its own next action (Condition B)
+- `jevgate` - the JEV classifier gates the actions (Condition C)
 
-## Prerequisites
+The primary comparison is B vs C: same LLM, same retrieval, same tools, same synthesis. The gate is the only variable. Set the condition and other fields (`llm`, `prompt_version`, `random_seed`, `max_steps`, ...) in `configs/base.yaml`.
 
-- Python ≥ 3.11
-- [uv](https://docs.astral.sh/uv/) — `pip install uv`
-- git
+### Running the experiments
 
----
-
-## Quick Start
+The experiment pipeline uses Gemini and needs `GEMINI_API_KEY` in `.env`. Each stage is runnable as `python -m jev_cot.<module>`:
 
 ```powershell
-# 1. Clone and enter the project
-git clone <repo-url>
-cd jev-cot
-
-# 2. Install all dependencies (runtime + dev)
-uv sync --extra dev
-
-# 3. Verify the config system works
-python -c "from jev_cot.config import load_config; cfg = load_config('configs/base.yaml'); print(cfg.llm, cfg.condition)"
-
-# 4. Run the test suite
-uv run pytest
-
-# 5. Run linting + type checking
-uv run ruff check src/ tests/
-uv run mypy src/
-```
-
----
-
-## Repository Structure
-
-All real code lives under `src/jev_cot/` (the installable package) — that's
-the one to read. The top-level `retrieval/`, `models/`, `controller/`,
-`evaluation/`, `experiments/` folders are empty leftovers from the initial
-scaffold, kept but unused (nothing imports them).
-
-```
-jev-cot/
-├── app.py                ← Streamlit frontend (calls src/jev_cot/ directly)
-├── docs/                 ← Intro, testing guide, full technical write-up
-├── .planning/            ← GSD planning artifacts (ROADMAP, REQUIREMENTS, STATE)
-├── src/jev_cot/          ← Installable Python package — ALL real code lives here
-│   ├── config.py         ← Typed experiment config loader (start here)
-│   ├── logging.py        ← Loguru dual-sink logging setup
-│   ├── retrieval/        ← Retrieval interface + FAISS backend
-│   ├── models/
-│   │   ├── jev/          ← JEV classifier, training, calibration
-│   │   └── llm/          ← LLM client wrapper, self-gate
-│   ├── controller/       ← Controller loop, actions, state extractor, limits
-│   ├── evaluation/       ← Grounding, quality, latency, cost, calibration metrics
-│   ├── experiments/      ← Run scripts: vanilla / selfgate / jevgate / matrix
-│   ├── analysis/         ← Statistical analysis, error taxonomy, report generator
-│   └── data/             ← Benchmark schema, splitter, trajectory schema
-├── data/
-│   ├── raw/              ← Seed benchmark examples + documents
-│   ├── processed/        ← Trajectories, JEV training pairs (generated)
-│   └── train/            ← Labeled JEV training data (generated)
-├── configs/              ← YAML experiment configs
-│   ├── base.yaml         ← Base config (all fields documented)
-│   └── conditions/       ← Condition A/B/C presets (Phase 2)
-├── logs/                 ← Per-run JSON-lines trajectory logs (generated)
-├── models/jev/checkpoints/ ← Trained JEV artifacts (generated)
-├── paper/                ← Auto-generated results summary
-└── tests/                ← pytest test suite (139 tests)
-```
-
----
-
-## Configuration
-
-All experiment parameters live in YAML files under `configs/`. The base config is [`configs/base.yaml`](configs/base.yaml).
-
-Key fields (all required for auditability — PRD §6.6):
-
-| Field | Description |
-|---|---|
-| `llm` | Model name, e.g. `gemini-1.5-pro-latest` |
-| `condition` | `vanilla` / `selfgate` / `jevgate` |
-| `prompt_version` | Version tag for all prompts |
-| `retrieval_version` | Version tag for the retrieval index |
-| `dataset_version` | Version tag for the benchmark dataset |
-| `jev_version` | JEV checkpoint version (`none` for Conditions A/B) |
-| `random_seed` | Reproducibility seed |
-| `max_steps` | Hard step-count cap per trajectory |
-
-```python
-from jev_cot.config import load_config
-
-cfg = load_config("configs/base.yaml")
-print(cfg.llm)  # gemini-1.5-pro-latest
-print(cfg.condition)  # vanilla
-```
-
----
-
-## Running the Full Pipeline
-
-**1. Get a Gemini API key** (free tier is plenty): https://aistudio.google.com/apikey
-
-**2. Set it up:**
-```powershell
-cp .env.example .env
-# then edit .env and paste your key after GEMINI_API_KEY=
-```
-
-**3. Run each stage, in order** (each is also runnable as `python -m jev_cot.<module>`):
-```powershell
-# Baselines
-uv run python -m jev_cot.experiments.run_vanilla       # Condition A
-uv run python -m jev_cot.experiments.run_selfgate      # Condition B
-
-# Collect (state, action) pairs from Condition B, then train + calibrate + freeze JEV
+uv run python -m jev_cot.experiments.run_vanilla
+uv run python -m jev_cot.experiments.run_selfgate
 uv run python -m jev_cot.experiments.collect_trajectories
 uv run python -m jev_cot.models.jev.labeling.rules
 uv run python -m jev_cot.models.jev.train
 uv run python -m jev_cot.models.jev.calibrate
-
-# Condition C, now that a frozen JEV checkpoint exists
 uv run python -m jev_cot.experiments.run_jevgate
-
-# Oracle upper bound
-uv run python -m jev_cot.experiments.run_oracle
-
-# Score any trajectories file for grounding + answer quality
-uv run python -m jev_cot.experiments.evaluate_run --trajectories logs/<run>_trajectories.jsonl
-
-# Full factorial matrix (the primary result) + auto-generated report
 uv run python -m jev_cot.experiments.run_matrix
 uv run python -m jev_cot.analysis.generate_report
-
-# Ablations
-uv run python -m jev_cot.experiments.ablations.size_ablation
-uv run python -m jev_cot.experiments.ablations.feature_ablations
 ```
 
-The FAISS index auto-builds on first use — no separate ingest step needed unless you want to rebuild it (`python -m jev_cot.retrieval.ingest`).
+### Repository structure
 
-Everything above makes real Gemini API calls and costs real (tiny) money — the seed dataset is 9 examples, so a full pass through every command above is a handful of cents on the free/low tier, not more.
+All real code lives under `src/jev_cot/`; the top-level `retrieval/`, `models/`, `controller/`, `evaluation/`, `experiments/` folders are unused scaffold leftovers.
 
-**Offline, no API key needed:** `uv run pytest` — the full test suite (139 tests) including `tests/test_pipeline_smoke.py`, which exercises the entire controller loop, JEV train/calibrate/save/load, and evaluation math end-to-end with a fake LLM client.
-
----
-
-## Frontend
-
-A small Streamlit UI (`app.py`) sits directly on top of the backend above — no separate API layer, it calls the same Python code the CLI scripts use.
-
-```powershell
-uv run streamlit run app.py
+```
+jev-cot/
+├── app.py                ← Streamlit frontend (Ask tab + research tabs)
+├── scripts/ask.py        ← Decision CLI
+├── docs/                 ← Intro, testing guide, technical write-up
+├── src/jev_cot/
+│   ├── config.py         ← Typed config loader (start here)
+│   ├── decision/         ← Router, local Jev (Ollama), grounded-answer pipeline
+│   ├── retrieval/        ← Retrieval interface + FAISS backend
+│   ├── models/           ← jev/ (classifier, training, calibration), llm/ (client, self-gate)
+│   ├── controller/       ← Controller loop, actions, state extractor, limits
+│   ├── evaluation/       ← Grounding, quality, latency, cost, calibration metrics
+│   ├── experiments/      ← vanilla / selfgate / jevgate / matrix runners
+│   ├── analysis/         ← Statistics, error taxonomy, report generator
+│   └── data/             ← Benchmark and trajectory schemas
+├── configs/              ← YAML configs (base.yaml, conditions/)
+├── data/                 ← Seed benchmark, trajectories, training data
+└── tests/                ← pytest suite
 ```
 
-Opens at `http://localhost:8501`. Three tabs: **Run a Question** (pick a benchmark question + condition, run it live), **Results** (the factorial matrix table, once `run_matrix.py` has produced one), **About** (the problem statement). See `docs/TESTING-GUIDE.md` §3 for details.
+### Testing and development
 
----
-
-## Decision mode (open-source Jev)
-
-Decision questions ("should I choose A or B?") are detected by a zero-token regex router and sent to a local open-source Jev model (via Ollama) that returns a probability per option. The LLM then writes its answer grounded in those probabilities. Non-decision questions go straight to the LLM.
+The full suite runs offline with no API key, using a fake LLM client:
 
 ```powershell
-winget install Ollama.Ollama
-ollama pull qwen3:8b
-uv run streamlit run app.py          # first tab: "Ask (Jev Decision)"
-uv run python scripts/ask.py "Should I choose data science or product management?"
-```
-
-Settings live in the `decision:` block of `configs/base.yaml`. If Ollama is not running, a clear error is raised (no silent fallback).
-
----
-
-## Decision mode (open-source Jev)
-
-Decision questions ("should I choose A or B?") are detected by a zero-token regex router and sent to a local open-source Jev model (via Ollama) that returns a probability per option. The LLM then writes its answer grounded in those probabilities. Non-decision questions go straight to the LLM.
-
-```powershell
-winget install Ollama.Ollama
-ollama pull qwen3:8b
-uv run streamlit run app.py          # first tab: "Ask (Jev Decision)"
-uv run python scripts/ask.py "Should I choose data science or product management?"
-```
-
-Settings live in the `decision:` block of `configs/base.yaml`. If Ollama is not running, a clear error is raised (no silent fallback).
-
----
-
-## Phase Status
-
-See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for the full 19-phase implementation plan and current status.
-
-| Phase | Description | Status |
-|---|---|---|
-| 1 | Repo scaffolding & config system | ✅ done |
-| 2 | Action enum + condition presets | ✅ done |
-| 3 | Benchmark schema + loader | ✅ done |
-| 4 | Retrieval layer (FAISS) | ✅ done |
-| 5 | Vanilla LLM baseline (Condition A) | ✅ built (needs API key to run) |
-| 6 | Structured state extractor | ✅ built |
-| 7 | Self-gate + controller loop (Condition B) | ✅ built (needs API key to run) |
-| 8 | Trajectory collection | ✅ built |
-| 9 | JEV label generation (rule-based) | ✅ built |
-| 10 | JEV model training (S/M/L) | ✅ built |
-| 11 | JEV calibration + freeze | ✅ built |
-| 12 | JEV integration (Condition C) | ✅ built (needs API key to run) |
-| 13-14 | Evaluation suite (efficiency/latency/grounding/quality) | ✅ built |
-| 15 | Full factorial experiment runner | ✅ built |
-| 16 | Ablation suite (size + feature) | ✅ built |
-| 17 | Oracle gate | ✅ built |
-| 18 | Error taxonomy | ✅ built |
-| 19 | Statistics + auto-generated report | ✅ built |
-
-"Built" means the code is written, imports cleanly, passes mypy --strict and ruff, and is exercised by an offline smoke test — but anything touching Gemini needs your API key in `.env` to actually run and hasn't been live-tested against the real API yet.
-
----
-
-## Development
-
-```powershell
-# Run tests with coverage
+uv run pytest
 uv run pytest --cov=jev_cot --cov-report=term-missing
-
-# Auto-fix lint issues
-uv run ruff check --fix src/ tests/
-
-# Format code
+uv run ruff check src/ tests/
 uv run ruff format src/ tests/
-
-# Type check
 uv run mypy src/
 ```
 
@@ -257,5 +166,4 @@ uv run mypy src/
 
 ## License
 
-*License TBD — research system, not yet publicly licensed.*
-
+The Jev model used for decisions (Qwen3) is Apache-2.0. License for this repository: TBD.
