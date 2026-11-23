@@ -61,6 +61,19 @@ class ModelNotFittedError(JevCotError):
 
 # ── External integration errors (JEV-EXT-xxx) ────────────────────────────────
 class ExternalAPIError(JevCotError):
-    """A third-party API (Gemini, TypeSafe Jev) returned an unusable response."""
+    """A third-party API (Gemini or local Jev/Ollama) returned an unusable response."""
 
     code = "JEV-EXT-001"
+
+
+# ── Local Jev decision errors (JEV-DECIDE-xxx) ───────────────────────────────
+class JevUnavailableError(JevCotError):
+    """The local Jev backend (Ollama) could not be reached."""
+
+    code = "JEV-DECIDE-001"
+
+
+class JevResponseError(JevCotError):
+    """The local Jev backend returned a response without usable option logprobs."""
+
+    code = "JEV-DECIDE-002"

@@ -178,6 +178,36 @@ Opens at `http://localhost:8501`. Three tabs: **Run a Question** (pick a benchma
 
 ---
 
+## Decision mode (open-source Jev)
+
+Decision questions ("should I choose A or B?") are detected by a zero-token regex router and sent to a local open-source Jev model (via Ollama) that returns a probability per option. The LLM then writes its answer grounded in those probabilities. Non-decision questions go straight to the LLM.
+
+```powershell
+winget install Ollama.Ollama
+ollama pull qwen3:8b
+uv run streamlit run app.py          # first tab: "Ask (Jev Decision)"
+uv run python scripts/ask.py "Should I choose data science or product management?"
+```
+
+Settings live in the `decision:` block of `configs/base.yaml`. If Ollama is not running, a clear error is raised (no silent fallback).
+
+---
+
+## Decision mode (open-source Jev)
+
+Decision questions ("should I choose A or B?") are detected by a zero-token regex router and sent to a local open-source Jev model (via Ollama) that returns a probability per option. The LLM then writes its answer grounded in those probabilities. Non-decision questions go straight to the LLM.
+
+```powershell
+winget install Ollama.Ollama
+ollama pull qwen3:8b
+uv run streamlit run app.py          # first tab: "Ask (Jev Decision)"
+uv run python scripts/ask.py "Should I choose data science or product management?"
+```
+
+Settings live in the `decision:` block of `configs/base.yaml`. If Ollama is not running, a clear error is raised (no silent fallback).
+
+---
+
 ## Phase Status
 
 See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for the full 19-phase implementation plan and current status.
