@@ -51,7 +51,7 @@ class TestLoadConfig:
         """Loading configs/base.yaml returns a correctly typed object."""
         cfg = load_config(base_yaml)
         assert isinstance(cfg, ExperimentConfig)
-        assert cfg.llm == "gemini-1.5-pro-latest"
+        assert cfg.llm == "gemini-flash-lite-latest"
         assert cfg.condition == "vanilla"
         assert cfg.random_seed == 42
         assert cfg.temperature == 0.0

@@ -41,6 +41,13 @@ retrieval:
   documents_dir: "data/raw/documents"        # seed corpus of {DOCUMENT_ID}.txt files
   index_dir: "data/processed/faiss_index"    # generated FAISS artifacts (git-ignored)
 
+# ── Decision mode (local open-source Jev via Ollama) ─────────────────────────
+decision:
+  jev_model: "qwen3:8b"
+  ollama_host: "http://localhost:11434"
+  n_permutations: 3
+  use_llm_router: false      # LLM fallback router costs tokens; heuristic router is free
+
 # ── Reproducibility ───────────────────────────────────────────────────────────
 random_seed: 42
 # timestamp is auto-set at load time (UTC ISO-8601); override here to pin it.

@@ -18,6 +18,9 @@ import streamlit as st
 
 from jev_cot.config import load_config
 from jev_cot.controller.loop import run_trajectory
+from jev_cot.decision.jev_local import LocalJev
+from jev_cot.decision.pipeline import answer as decision_answer
+from jev_cot.errors import JevCotError
 from jev_cot.experiments.common import get_retriever, load_dataset, new_run_id
 from jev_cot.models.jev.gate import JEVGate
 from jev_cot.models.llm.client import LLMClient
@@ -51,18 +54,60 @@ st.title("JEV-Gated Adaptive Chain-of-Thought")
 st.caption("Can a compact trained classifier replace an LLM's own control-flow decisions?")
 
 has_key = bool(os.environ.get("GEMINI_API_KEY"))
-if not has_key:
-    st.warning(
-        "No GEMINI_API_KEY found. Copy `.env.example` to `.env` and add your key "
-        "(free at https://aistudio.google.com/apikey) before running a trajectory. "
-        "The Results and About tabs work without a key."
-    )
+ASK_MODELS = ["ollama/qwen3:8b", "gemini-flash-lite-latest"]
 
-tab_run, tab_results, tab_about = st.tabs(["▶ Run a Question", "📈 Results", "ℹ About"])
+tab_ask, tab_run, tab_results, tab_about = st.tabs(
+    ["Ask (Jev Decision)", "▶ Run a Question", "📈 Results", "ℹ About"]
+)
+
+# ── Tab 0: Ask — decision questions routed to the local Jev ──────────────────
+with tab_ask:
+    st.subheader("Ask a decision question")
+    _dcfg = load_config(REPO_ROOT / "configs" / "base.yaml").decision
+    _jev = LocalJev(
+        model=_dcfg.jev_model, host=_dcfg.ollama_host, n_permutations=_dcfg.n_permutations
+    )
+    ask_model = st.selectbox("Answer LLM", ASK_MODELS, index=0, key="ask_model")
+    gemini_blocked = not ask_model.startswith("ollama/") and not has_key
+    if gemini_blocked:
+        st.warning(
+            "No GEMINI_API_KEY found. Copy `.env.example` to `.env` and add your key "
+            "(free at https://aistudio.google.com/apikey) to use a Gemini model."
+        )
+    if _jev.health_check():
+        st.caption(f"Jev: online ({_dcfg.jev_model} @ {_dcfg.ollama_host})")
+    else:
+        st.caption(f"Jev: offline. Start Ollama and run `ollama pull {_dcfg.jev_model}`.")
+    ask_q = st.text_area(
+        "Question",
+        placeholder="I'm a CS grad. Should I choose data science or product management?",
+    )
+    if st.button("Ask", type="primary", disabled=gemini_blocked or not ask_q.strip()):
+        try:
+            with st.spinner("Thinking…"):
+                _client = LLMClient(model=ask_model, temperature=0.0, max_tokens=1024)
+                res = decision_answer(ask_q, _client, _jev, use_llm_router=_dcfg.use_llm_router)
+            if res.routed_to_jev and res.decision is not None:
+                st.success("Routed to Jev")
+                st.bar_chart(res.decision.probabilities)
+                st.caption(
+                    f"Choice: {res.decision.choice} "
+                    f"(confidence {res.decision.confidence:.2f}, "
+                    f"{res.decision.latency_ms:.0f} ms)"
+                )
+            else:
+                st.info("Not a decision question: answered by the LLM directly.")
+            st.markdown(res.answer)
+        except JevCotError as exc:
+            st.error(str(exc))
 
 # ── Tab 1: Run a single question through a condition ─────────────────────────
 with tab_run:
     st.subheader("Run one benchmark question through a condition")
+    if not has_key:
+        st.warning("No GEMINI_API_KEY found; running a trajectory needs one (see `.env.example`).")
+    if not has_key:
+        st.warning("No GEMINI_API_KEY found; running a trajectory needs one (see `.env.example`).")
 
     if not DATASET_PATH.exists():
         st.error(f"Dataset not found at {DATASET_PATH}")

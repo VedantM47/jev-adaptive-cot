@@ -89,6 +89,19 @@ class RetrievalConfig(BaseModel):
         return self
 
 
+class DecisionConfig(BaseModel):
+    """Settings for decision mode: routing questions to a local open-source Jev model."""
+
+    model_config = {"frozen": True}
+
+    jev_model: str = Field(default="qwen3:8b", description="Ollama model used as the Jev")
+    ollama_host: str = Field(default="http://localhost:11434")
+    n_permutations: int = Field(default=3, ge=1, description="Option-order permutations")
+    use_llm_router: bool = Field(
+        default=False, description="Use an LLM to detect decisions when heuristics fail"
+    )
+
+
 class ExperimentConfig(BaseModel):
     """
     Canonical config object for a single experiment run.
@@ -136,6 +149,10 @@ class ExperimentConfig(BaseModel):
         default_factory=RetrievalConfig, description="Retrieval-layer settings (Phase 4)"
     )
 
+    decision: DecisionConfig = Field(
+        default_factory=DecisionConfig, description="Decision-mode (local Jev) settings"
+    )
+
     # ── Reproducibility ───────────────────────────────────────────────────────
     random_seed: int = Field(default=42)
     timestamp: str = Field(
@@ -144,11 +161,7 @@ class ExperimentConfig(BaseModel):
     )
 
     # ── Condition ─────────────────────────────────────────────────────────────
-    # "typesafe_jev" is a 4th, optional comparison arm: TypeSafe AI's real
-    # commercial "Jev" decision model (docs.typesafe.ai), used here as an
-    # external benchmark against our own from-scratch JEV classifier. Only
-    # runs if TYPESAFE_API_KEY is set.
-    condition: Literal["vanilla", "selfgate", "jevgate", "typesafe_jev"] = Field(
+    condition: Literal["vanilla", "selfgate", "jevgate"] = Field(
         default="vanilla",
         description="Experimental condition. Controls which gate is used.",
     )

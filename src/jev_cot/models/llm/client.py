@@ -22,7 +22,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from jev_cot.errors import MissingAPIKeyError
+from jev_cot.errors import ExternalAPIError, MissingAPIKeyError
 
 load_dotenv()
 
@@ -35,6 +35,7 @@ _RATES_PER_1M_TOKENS: dict[str, tuple[float, float]] = {
     "gemini-3.1-pro-preview": (1.25, 5.00),
 }
 _DEFAULT_RATE = (0.50, 1.50)
+_OLLAMA_PREFIX = "ollama/"
 
 
 @dataclass(frozen=True)
@@ -70,8 +71,51 @@ class LLMClient:
             self._client = genai.Client(api_key=api_key)
         return self._client
 
+    def _generate_ollama(self, prompt: str) -> LLMResponse:
+        import requests
+
+        host = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+        name = self.model_name[len(_OLLAMA_PREFIX) :]
+        payload: dict[str, Any] = {
+            "model": name,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+            "think": False,
+            "options": {"temperature": self.temperature, "num_predict": self.max_tokens},
+        }
+        start = time.perf_counter()
+        try:
+            resp = requests.post(f"{host}/api/chat", json=payload, timeout=300)
+            resp.raise_for_status()
+            data = resp.json()
+        except requests.RequestException as exc:
+            raise ExternalAPIError(
+                f"Ollama request to {host} failed ({exc}). Start Ollama and run "
+                f"`ollama pull {name}`."
+            ) from exc
+        latency_ms = (time.perf_counter() - start) * 1000.0
+        try:
+            text = str(data["message"]["content"])
+        except (KeyError, TypeError) as exc:
+            raise ExternalAPIError(f"unexpected Ollama response: {data!r}") from exc
+        return LLMResponse(
+            text=text,
+            input_tokens=int(data.get("prompt_eval_count", 0) or 0),
+            output_tokens=int(data.get("eval_count", 0) or 0),
+            cost_usd=0.0,
+            latency_ms=latency_ms,
+            model=self.model_name,
+        )
+
     def generate(self, prompt: str) -> LLMResponse:
-        """Send *prompt* to Gemini and return a typed response with cost/latency."""
+        """Send *prompt* to the model and return a typed response with cost/latency.
+
+        Models named ``ollama/<name>`` go to a local Ollama server (OLLAMA_HOST);
+        everything else goes to Gemini.
+        """
+        if self.model_name.startswith(_OLLAMA_PREFIX):
+            return self._generate_ollama(prompt)
+
         from google.genai import types
 
         client = self._get_client()
